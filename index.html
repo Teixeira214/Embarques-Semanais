@@ -7,74 +7,57 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-  <!-- ╔══════════════════════════════════════════════════════╗
-       ║  FIREBASE — substitua os valores abaixo pelos seus  ║
-       ║  Veja o README no final do arquivo                   ║
-       ╚══════════════════════════════════════════════════════╝ -->
   <script type="module">
-    import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { initializeApp }     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, doc, getDoc, setDoc, onSnapshot }
-                                      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+                                 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    /* ───────────────────────────────────────────────
-       🔧 COLE AQUI AS SUAS CREDENCIAIS DO FIREBASE
-    ─────────────────────────────────────────────── */
+    /* ── SUAS CREDENCIAIS ── */
     const firebaseConfig = {
-  apiKey: "AIzaSyAP96jmOcqIxrIhIxpQr_-eQJteSFARWiU",
-  authDomain: "embarques-semanais-345f5.firebaseapp.com",
-  projectId: "embarques-semanais-345f5",
-  storageBucket: "embarques-semanais-345f5.firebasestorage.app",
-  messagingSenderId: "1042529084199",
-  appId: "1:1042529084199:web:b18a880992561eb5613f02"
-};
-
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
-
-    /* Documento único que guarda TODOS os embarques */
-    const DOC_REF = doc(db, "embarques", "dados");
-
-    /* ── API exposta para o restante do código ── */
-    window.FireStore = {
-      async get() {
-        try {
-          const snap = await getDoc(DOC_REF);
-          return snap.exists() ? snap.data().payload : {};
-        } catch(e) {
-          console.error("Firestore get:", e);
-          return {};
-        }
-      },
-
-      async set(data) {
-        try {
-          await setDoc(DOC_REF, { payload: data });
-        } catch(e) {
-          console.error("Firestore set:", e);
-        }
-      },
-
-      /* Escuta mudanças em tempo real feitas por outros usuários */
-      listen(callback) {
-        return onSnapshot(DOC_REF, snap => {
-          if (snap.exists()) callback(snap.data().payload);
-        });
-      }
+      apiKey:            "AIzaSyAP96jmOcqIxrIhIxpQr_-eQJteSFARWiU",
+      authDomain:        "embarques-semanais-345f5.firebaseapp.com",
+      projectId:         "embarques-semanais-345f5",
+      storageBucket:     "embarques-semanais-345f5.firebasestorage.app",
+      messagingSenderId: "1042529084199",
+      appId:             "1:1042529084199:web:b18a880992561eb5613f02"
     };
 
-    /* Dispara evento para o app saber que o Firebase está pronto */
-    window.dispatchEvent(new Event("firebase-ready"));
+    try {
+      const app = initializeApp(firebaseConfig);
+      const db  = getFirestore(app);
+      const REF = doc(db, "embarques", "dados");
+
+      window.FireStore = {
+        async get() {
+          const snap = await getDoc(REF);
+          return snap.exists() ? snap.data().payload : {};
+        },
+        async set(data) {
+          await setDoc(REF, { payload: data });
+        },
+        listen(cb) {
+          return onSnapshot(REF, snap => {
+            if (snap.exists()) cb(snap.data().payload);
+          });
+        }
+      };
+
+      window.dispatchEvent(new Event("firebase-ready"));
+    } catch(err) {
+      console.error("Firebase init error:", err);
+      window.dispatchEvent(new Event("firebase-error"));
+    }
   </script>
 
   <style>
     :root {
       --primary:    #0b2c4d;
       --primary-lt: #1a4a7a;
-      --bg:         #f0f4f8;
+      --bg:         #eef2f7;
       --surface:    #ffffff;
-      --border:     #dde3ed;
+      --border:     #d8e0ec;
       --text:       #0f1f2e;
-      --muted:      #6b7c93;
+      --muted:      #5a6f87;
 
       --cooxupe:    #7c4a1e;
       --ofi:        #6a1b9a;
@@ -86,9 +69,9 @@
       --nkg-lt:     #e4f4eb;
       --outros-lt:  #fdf3dc;
 
-      --radius:    10px;
-      --shadow:    0 2px 12px rgba(11,44,77,0.08);
-      --shadow-lg: 0 8px 32px rgba(11,44,77,0.14);
+      --radius:    12px;
+      --shadow:    0 2px 14px rgba(11,44,77,0.09);
+      --shadow-lg: 0 8px 36px rgba(11,44,77,0.15);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -100,93 +83,136 @@
       min-height: 100vh;
     }
 
-    /* ── HEADER ── */
+    /* ════════════════════════
+       HEADER — maior e mais impactante
+    ════════════════════════ */
     .header {
       background: var(--primary);
       color: #fff;
-      padding: 0 32px;
+      padding: 0 40px;
       display: flex; align-items: center; justify-content: space-between;
-      height: 64px;
+      height: 80px;                       /* ↑ era 64px */
       position: sticky; top: 0; z-index: 100;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+      box-shadow: 0 3px 20px rgba(0,0,0,0.22);
     }
 
-    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-left { display: flex; align-items: center; gap: 18px; }
 
     .logo {
-      width: 38px; height: 38px; background: #fff; color: var(--primary);
-      border-radius: 8px; display: flex; align-items: center; justify-content: center;
-      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 13px;
+      width: 48px; height: 48px;          /* ↑ era 38px */
+      background: #fff; color: var(--primary);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px;
+      letter-spacing: -0.5px; flex-shrink: 0;
     }
 
-    .header h1 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
-    .header-right { display: flex; align-items: center; gap: 10px; }
+    .header-titles { display: flex; flex-direction: column; gap: 1px; }
 
-    .sync-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.75); }
-    .sync-dot   { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; transition: background 0.3s; }
-    .sync-dot.syncing  { background: #fbbf24; animation: pulse 0.8s infinite; }
-    .sync-dot.offline  { background: #f87171; }
-    .sync-dot.error    { background: #f87171; }
-
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-    /* ── BANNER de configuração ── */
-    #config-banner {
-      background: #fff3cd; border-bottom: 2px solid #f0c040;
-      padding: 10px 32px; font-size: 13px; color: #7a5800;
-      display: flex; align-items: center; gap: 10px;
+    .header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 26px;                    /* ↑ era 18px */
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
     }
-    #config-banner a { color: #7a5800; font-weight: 700; }
-    #config-banner.hidden { display: none; }
 
-    /* ── INSIGHTS ── */
+    .header-sub {
+      font-size: 12px;
+      opacity: 0.6;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 12px; }
+
+    /* Sync badge */
+    .sync-badge {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; color: rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.1);
+      padding: 6px 14px; border-radius: 20px;
+    }
+
+    .sync-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #4ade80; flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .sync-dot.syncing { background: #fbbf24; animation: pulse 0.8s infinite; }
+    .sync-dot.offline { background: #f87171; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    /* ════════════════════════
+       INSIGHTS — cards maiores
+    ════════════════════════ */
     .insights {
       display: grid; grid-template-columns: repeat(4,1fr);
-      gap: 14px; padding: 20px 32px 0;
+      gap: 16px; padding: 24px 40px 0;
     }
 
     .card {
       background: var(--surface); border-radius: var(--radius);
-      padding: 16px 18px; display: flex; align-items: center; gap: 14px;
+      padding: 22px 24px;                 /* ↑ era 16px 18px */
+      display: flex; align-items: center; gap: 18px;
       box-shadow: var(--shadow); border: 1px solid var(--border);
+      transition: transform 0.15s, box-shadow 0.15s;
     }
+
+    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 
     .card-icon {
-      width: 42px; height: 42px; border-radius: 10px; background: #e8eef6;
+      width: 56px; height: 56px;          /* ↑ era 42px */
+      border-radius: 14px; background: #e4eaf5;
       display: flex; align-items: center; justify-content: center;
-      color: var(--primary); font-size: 18px; flex-shrink: 0;
+      color: var(--primary); font-size: 22px; flex-shrink: 0;
     }
 
+    .card-text { min-width: 0; }
+
     .card-text span {
-      font-size: 11px; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 0.5px; color: var(--muted);
+      font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted);
+      display: block; margin-bottom: 4px;
     }
 
     .card-text h2 {
-      font-family: 'Syne', sans-serif; font-size: 22px;
-      font-weight: 700; color: var(--text); margin-top: 2px;
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;                    /* ↑ era 22px */
+      font-weight: 800; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
-    /* ── TOOLBAR ── */
+    /* ════════════════════════
+       TOOLBAR
+    ════════════════════════ */
     .toolbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 32px; gap: 12px; flex-wrap: wrap;
+      padding: 20px 40px; gap: 12px; flex-wrap: wrap;
     }
 
-    .toolbar-left { display: flex; align-items: center; gap: 10px; }
+    .toolbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
     .semana-badge {
       background: var(--primary); color: #fff;
-      border-radius: 8px; padding: 8px 18px;
-      text-align: center; min-width: 170px;
+      border-radius: 10px; padding: 10px 22px;
+      text-align: center; min-width: 190px;
     }
 
-    .semana-badge .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.75; }
-    .semana-badge .valor { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; }
+    .semana-badge .label {
+      font-size: 10px; text-transform: uppercase;
+      letter-spacing: 1.2px; opacity: 0.7;
+    }
+
+    .semana-badge .valor {
+      font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 700;
+    }
 
     .btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 14px; border-radius: 8px; border: none;
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 16px; border-radius: 9px; border: none;
       cursor: pointer; font-family: 'DM Sans', sans-serif;
       font-size: 13px; font-weight: 600;
       transition: opacity 0.15s, transform 0.1s;
@@ -197,25 +223,27 @@
 
     .btn-ghost   { background: var(--surface); color: var(--primary); border: 1px solid var(--border); }
     .btn-primary { background: var(--primary); color: #fff; }
-    .btn-success { background: #1b6b32; color: #fff; }
+    .btn-success { background: #1a6b30; color: #fff; font-size: 14px; padding: 11px 18px; }
 
     input[type="date"].seletor-data {
-      padding: 8px 12px; border-radius: 8px;
+      padding: 9px 14px; border-radius: 9px;
       border: 1px solid var(--border); background: var(--surface);
       font-family: 'DM Sans', sans-serif; font-size: 13px;
       color: var(--primary); cursor: pointer;
     }
 
-    /* ── LEGENDA ── */
-    .legenda { display: flex; gap: 8px; padding: 0 32px 16px; }
+    /* ════════════════════════
+       LEGENDA
+    ════════════════════════ */
+    .legenda { display: flex; gap: 10px; padding: 0 40px 18px; flex-wrap: wrap; }
 
     .leg {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 12px; border-radius: 6px;
-      font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 14px; border-radius: 8px;
+      font-size: 13px; font-weight: 700; letter-spacing: 0.2px;
     }
 
-    .leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .leg-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
 
     .leg.cooxupe { background: var(--cooxupe-lt); color: var(--cooxupe); }
     .leg.ofi     { background: var(--ofi-lt);     color: var(--ofi); }
@@ -227,24 +255,26 @@
     .leg.nkg     .leg-dot { background: var(--nkg); }
     .leg.outros  .leg-dot { background: var(--outros); }
 
-    /* ── GRID ── */
-    .agenda { padding: 0 32px 32px; }
+    /* ════════════════════════
+       GRID
+    ════════════════════════ */
+    .agenda { padding: 0 40px 40px; }
 
     .grid-wrap {
-      background: var(--surface); border-radius: 14px;
+      background: var(--surface); border-radius: 16px;
       border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow);
     }
 
     .agenda-header, .agenda-row {
-      display: grid; grid-template-columns: 120px repeat(5,1fr);
+      display: grid; grid-template-columns: 130px repeat(5,1fr);
     }
 
     .agenda-header { background: var(--primary); color: #fff; }
 
     .agenda-header div {
-      padding: 12px 10px; text-align: center;
-      font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700;
-      letter-spacing: 0.5px; border-right: 1px solid rgba(255,255,255,0.1);
+      padding: 14px 12px; text-align: center;
+      font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+      letter-spacing: 0.5px; border-right: 1px solid rgba(255,255,255,0.12);
     }
 
     .agenda-header div:last-child { border-right: none; }
@@ -257,144 +287,180 @@
     .agenda-row div:last-child { border-right: none; }
 
     .periodo {
-      background: #f6f8fb; font-size: 12px; font-weight: 700;
+      background: #f4f7fb; font-size: 13px; font-weight: 700;
       color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;
-      display: flex; align-items: center; justify-content: center; padding: 10px;
+      display: flex; align-items: center; justify-content: center; padding: 12px;
     }
 
     .cell {
-      background: var(--surface); min-height: 90px;
-      padding: 6px; transition: background 0.15s;
+      background: var(--surface); min-height: 110px; /* ↑ era 90px */
+      padding: 8px; transition: background 0.15s;
     }
 
     .cell.drag-over {
-      background: #e8eef6;
+      background: #dde8f5;
       outline: 2px dashed var(--primary-lt); outline-offset: -4px;
     }
 
-    .total-row .periodo { background: #edf1f8; font-size: 11px; }
+    /* Total row */
+    .total-row .periodo { background: #e8edf6; font-size: 12px; }
 
     .total-row .cell {
-      background: #edf1f8; font-family: 'Syne', sans-serif;
-      font-size: 15px; font-weight: 700; color: var(--primary);
+      background: #e8edf6;
+      font-family: 'Syne', sans-serif; font-size: 18px; /* ↑ */
+      font-weight: 800; color: var(--primary);
       display: flex; align-items: center; justify-content: center;
-      min-height: 44px;
+      min-height: 50px;
     }
 
-    /* ── EMBARQUE CARD ── */
+    /* ════════════════════════
+       EMBARQUE CARD — mais espaçoso e legível
+    ════════════════════════ */
     .embarque {
-      border-radius: 7px; padding: 7px 8px; margin: 3px 0;
-      font-size: 11.5px; cursor: grab; position: relative;
+      border-radius: 9px; padding: 10px 11px; /* ↑ era 7px 8px */
+      margin: 4px 0; font-size: 13px;         /* ↑ era 11.5px */
+      cursor: grab; position: relative;
       transition: box-shadow 0.15s, transform 0.15s;
     }
 
-    .embarque:hover  { box-shadow: 0 4px 14px rgba(0,0,0,0.15); transform: translateY(-1px); }
+    .embarque:hover  { box-shadow: 0 5px 16px rgba(0,0,0,0.17); transform: translateY(-2px); }
     .embarque:active { cursor: grabbing; }
 
-    .embarque.cooxupe { background: var(--cooxupe-lt); color: var(--cooxupe); border-left: 3px solid var(--cooxupe); }
-    .embarque.ofi     { background: var(--ofi-lt);     color: var(--ofi);     border-left: 3px solid var(--ofi); }
-    .embarque.nkg     { background: var(--nkg-lt);     color: var(--nkg);     border-left: 3px solid var(--nkg); }
-    .embarque.outros  { background: var(--outros-lt);  color: var(--outros);  border-left: 3px solid var(--outros); }
+    .embarque.cooxupe { background: var(--cooxupe-lt); color: var(--cooxupe); border-left: 4px solid var(--cooxupe); }
+    .embarque.ofi     { background: var(--ofi-lt);     color: var(--ofi);     border-left: 4px solid var(--ofi); }
+    .embarque.nkg     { background: var(--nkg-lt);     color: var(--nkg);     border-left: 4px solid var(--nkg); }
+    .embarque.outros  { background: var(--outros-lt);  color: var(--outros);  border-left: 4px solid var(--outros); }
 
     .embarque-cliente {
-      font-family: 'Syne', sans-serif; font-size: 11px;
-      font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;
+      font-family: 'Syne', sans-serif; font-size: 13px; /* ↑ era 11px */
+      font-weight: 800; letter-spacing: 0.4px; margin-bottom: 6px;
+      padding-bottom: 5px; border-bottom: 1px solid currentColor;
+      opacity: 0.9;
     }
 
-    .embarque-info { display: flex; flex-direction: column; gap: 1px; }
-    .embarque-info span   { font-size: 11px; opacity: 0.85; }
-    .embarque-info strong { font-weight: 600; opacity: 1; }
+    .embarque-info { display: flex; flex-direction: column; gap: 3px; } /* ↑ era 1px */
+
+    .embarque-info span {
+      font-size: 12px;  /* ↑ era 11px */
+      opacity: 1;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    .embarque-info strong { font-weight: 700; }
 
     .embarque-acoes {
-      display: flex; justify-content: flex-end; gap: 4px; margin-top: 5px;
+      display: flex; justify-content: flex-end; gap: 5px; margin-top: 7px;
     }
 
     .embarque-acoes button {
-      border: none; border-radius: 4px; padding: 3px 7px;
-      font-size: 10px; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-weight: 600;
+      border: none; border-radius: 5px; padding: 4px 9px; /* ↑ */
+      font-size: 11px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-weight: 700;
       transition: opacity 0.15s;
     }
 
     .embarque-acoes button:hover { opacity: 0.75; }
     .btn-edit { background: rgba(11,44,77,0.1); color: var(--primary); }
-    .btn-del  { background: rgba(220,40,40,0.12); color: #c0392b; }
+    .btn-del  { background: rgba(200,30,30,0.1); color: #b91c1c; }
 
-    /* ── MODAL ── */
+    /* ════════════════════════
+       MODAL
+    ════════════════════════ */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(11,28,55,0.5);
+      position: fixed; inset: 0; background: rgba(5,18,38,0.55);
       display: none; align-items: center; justify-content: center;
-      z-index: 1000; backdrop-filter: blur(3px);
+      z-index: 1000; backdrop-filter: blur(4px);
     }
 
     .modal {
-      background: var(--surface); width: 460px; border-radius: 16px;
-      padding: 28px; box-shadow: var(--shadow-lg); animation: slideUp 0.2s ease;
+      background: var(--surface); width: 480px; border-radius: 18px;
+      padding: 30px; box-shadow: var(--shadow-lg); animation: slideUp 0.2s ease;
     }
 
     @keyframes slideUp {
-      from { transform: translateY(16px); opacity: 0; }
+      from { transform: translateY(18px); opacity: 0; }
       to   { transform: translateY(0);    opacity: 1; }
     }
 
     .modal-title {
-      font-family: 'Syne', sans-serif; font-size: 18px;
-      font-weight: 700; color: var(--primary); margin-bottom: 20px;
-      display: flex; align-items: center; gap: 10px;
+      font-family: 'Syne', sans-serif; font-size: 20px;
+      font-weight: 800; color: var(--primary); margin-bottom: 22px;
+      display: flex; align-items: center; gap: 11px;
     }
 
-    .form-embarque { display: flex; flex-direction: column; gap: 14px; }
+    .form-embarque { display: flex; flex-direction: column; gap: 15px; }
     .form-row { display: flex; gap: 12px; }
     .form-group { display: flex; flex-direction: column; flex: 1; }
 
     .form-group label {
-      font-size: 12px; font-weight: 600; letter-spacing: 0.3px;
-      color: var(--muted); text-transform: uppercase; margin-bottom: 5px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+      color: var(--muted); text-transform: uppercase; margin-bottom: 6px;
     }
 
     .form-group input, .form-group select {
-      padding: 9px 12px; border-radius: 8px; border: 1.5px solid var(--border);
+      padding: 10px 13px; border-radius: 9px; border: 1.5px solid var(--border);
       font-family: 'DM Sans', sans-serif; font-size: 14px;
-      color: var(--text); background: #f8fafc;
+      color: var(--text); background: #f6f9fc;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
 
     .form-group input:focus, .form-group select:focus {
       outline: none; border-color: var(--primary-lt);
-      box-shadow: 0 0 0 3px rgba(11,44,77,0.08);
+      box-shadow: 0 0 0 3px rgba(11,44,77,0.09);
+      background: #fff;
     }
 
     .condicional { display: none; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 
-    .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
-
-    /* ── TOAST ── */
+    /* ════════════════════════
+       TOAST
+    ════════════════════════ */
     #toast {
-      position: fixed; bottom: 24px; right: 24px;
+      position: fixed; bottom: 28px; right: 28px;
       background: var(--primary); color: #fff;
-      padding: 12px 18px; border-radius: 10px;
-      font-size: 13px; font-weight: 500;
+      padding: 14px 20px; border-radius: 12px;
+      font-size: 14px; font-weight: 500;
       display: none; z-index: 9999; box-shadow: var(--shadow-lg);
+      animation: toastIn 0.25s ease;
     }
 
-    /* ── LOADING BAR ── */
+    @keyframes toastIn {
+      from { transform: translateY(12px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    /* ════════════════════════
+       LOADING BAR
+    ════════════════════════ */
     #loading-bar {
       position: fixed; top: 0; left: 0; height: 3px;
-      background: linear-gradient(90deg, #3b9eff, #7fc8ff);
-      width: 0; transition: width 0.3s ease; z-index: 9999;
+      background: linear-gradient(90deg, #4dabf7, #74c0fc, #a5d8ff);
+      width: 0; transition: width 0.35s ease; z-index: 9999;
     }
 
-    .embarque-movido { animation: destaque 0.9s ease; }
+    .embarque-movido { animation: destaque 1s ease; }
 
     @keyframes destaque {
-      0%  { box-shadow: 0 0 0 rgba(11,44,77,0); }
-      40% { box-shadow: 0 0 0 4px rgba(11,44,77,0.35); }
-      100%{ box-shadow: 0 0 0 rgba(11,44,77,0); }
+      0%  { box-shadow: 0 0 0 0   rgba(11,44,77,0); }
+      35% { box-shadow: 0 0 0 5px rgba(11,44,77,0.3); }
+      100%{ box-shadow: 0 0 0 0   rgba(11,44,77,0); }
     }
 
-    @media (max-width: 900px) {
+    /* ════════════════════════
+       RESPONSIVE
+    ════════════════════════ */
+    @media (max-width: 1024px) {
       .insights { grid-template-columns: repeat(2,1fr); }
-      .agenda-header, .agenda-row { grid-template-columns: 90px repeat(5,1fr); }
+    }
+
+    @media (max-width: 700px) {
+      .header { padding: 0 18px; height: 70px; }
+      .header h1 { font-size: 20px; }
+      .insights { grid-template-columns: 1fr 1fr; padding: 16px 18px 0; }
+      .toolbar, .legenda, .agenda { padding-left: 18px; padding-right: 18px; }
+      .agenda-header, .agenda-row { grid-template-columns: 80px repeat(5,1fr); }
+      .card-text h2 { font-size: 22px; }
     }
   </style>
 </head>
@@ -402,22 +468,19 @@
 
 <div id="loading-bar"></div>
 
-<!-- Banner de aviso enquanto não configurar -->
-<div id="config-banner">
-  ⚠️ <strong>Configure o Firebase:</strong> Abra este arquivo, localize <code>firebaseConfig</code> e cole suas credenciais.
-  <a href="#readme" onclick="document.getElementById('readme').scrollIntoView({behavior:'smooth'})">Ver instruções ↓</a>
-</div>
-
 <!-- HEADER -->
 <header class="header">
   <div class="header-left">
     <div class="logo">SS</div>
-    <h1>Embarques Semanais</h1>
+    <div class="header-titles">
+      <h1>Embarques Semanais</h1>
+      <span class="header-sub">Super Safra · Controle de Logística</span>
+    </div>
   </div>
   <div class="header-right">
     <div class="sync-badge">
       <div class="sync-dot" id="sync-dot"></div>
-      <span id="sync-label">Aguardando…</span>
+      <span id="sync-label">Conectando…</span>
     </div>
   </div>
 </header>
@@ -426,35 +489,51 @@
 <section class="insights">
   <div class="card">
     <div class="card-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
-    <div class="card-text"><span>Total de Sacas</span><h2 id="insight-total-sacas">0</h2></div>
+    <div class="card-text">
+      <span>Total de Sacas</span>
+      <h2 id="insight-total-sacas">0</h2>
+    </div>
   </div>
   <div class="card">
     <div class="card-icon"><i class="fa-solid fa-truck"></i></div>
-    <div class="card-text"><span>Embarques na Semana</span><h2 id="insight-total-embarques">0</h2></div>
+    <div class="card-text">
+      <span>Embarques na Semana</span>
+      <h2 id="insight-total-embarques">0</h2>
+    </div>
   </div>
   <div class="card">
     <div class="card-icon"><i class="fa-solid fa-scale-balanced"></i></div>
-    <div class="card-text"><span>Maior Volume</span><h2 id="insight-cliente-volume">—</h2></div>
+    <div class="card-text">
+      <span>Maior Volume</span>
+      <h2 id="insight-cliente-volume">—</h2>
+    </div>
   </div>
   <div class="card">
     <div class="card-icon"><i class="fa-solid fa-ranking-star"></i></div>
-    <div class="card-text"><span>Mais Embarques</span><h2 id="insight-cliente-embarques">—</h2></div>
+    <div class="card-text">
+      <span>Mais Embarques</span>
+      <h2 id="insight-cliente-embarques">—</h2>
+    </div>
   </div>
 </section>
 
 <!-- TOOLBAR -->
 <div class="toolbar">
   <div class="toolbar-left">
-    <button class="btn btn-ghost" onclick="mudarSemana(-1)">← Anterior</button>
+    <button class="btn btn-ghost" onclick="mudarSemana(-1)">
+      <i class="fa-solid fa-chevron-left"></i> Anterior
+    </button>
     <div class="semana-badge">
-      <div class="label">Semana</div>
+      <div class="label">Semana em exibição</div>
       <div class="valor" id="semana-label">—</div>
     </div>
-    <button class="btn btn-ghost" onclick="mudarSemana(1)">Próxima →</button>
-    <button class="btn btn-primary" onclick="voltarSemanaAtual()">
-      <i class="fa-solid fa-house"></i> Atual
+    <button class="btn btn-ghost" onclick="mudarSemana(1)">
+      Próxima <i class="fa-solid fa-chevron-right"></i>
     </button>
-    <input type="date" id="seletor-data" class="seletor-data" title="Ir para semana">
+    <button class="btn btn-primary" onclick="voltarSemanaAtual()">
+      <i class="fa-solid fa-house"></i> Semana Atual
+    </button>
+    <input type="date" id="seletor-data" class="seletor-data" title="Ir para semana específica">
   </div>
   <button class="btn btn-success" onclick="abrirModal()">
     <i class="fa-solid fa-plus"></i> Novo Embarque
@@ -474,25 +553,27 @@
   <div class="grid-wrap">
     <div class="agenda-header">
       <div>PERÍODO</div>
-      <div id="dia-seg">SEG</div><div id="dia-ter">TER</div>
-      <div id="dia-qua">QUA</div><div id="dia-qui">QUI</div>
+      <div id="dia-seg">SEG</div>
+      <div id="dia-ter">TER</div>
+      <div id="dia-qua">QUA</div>
+      <div id="dia-qui">QUI</div>
       <div id="dia-sex">SEX</div>
     </div>
 
     <div class="agenda-row" id="row-matutino">
-      <div class="periodo">Matutino</div>
+      <div class="periodo">☀️ Matutino</div>
       <div class="cell"></div><div class="cell"></div>
       <div class="cell"></div><div class="cell"></div><div class="cell"></div>
     </div>
 
     <div class="agenda-row" id="row-vespertino">
-      <div class="periodo">Vespertino</div>
+      <div class="periodo">🌤 Vespertino</div>
       <div class="cell"></div><div class="cell"></div>
       <div class="cell"></div><div class="cell"></div><div class="cell"></div>
     </div>
 
     <div class="agenda-row total-row">
-      <div class="periodo">Total</div>
+      <div class="periodo">📦 Total</div>
       <div class="cell total-cell" data-dia="seg">0</div>
       <div class="cell total-cell" data-dia="ter">0</div>
       <div class="cell total-cell" data-dia="qua">0</div>
@@ -531,15 +612,18 @@
         <div class="form-group">
           <label>Dia da Semana</label>
           <select name="dia" required>
-            <option value="seg">Segunda</option><option value="ter">Terça</option>
-            <option value="qua">Quarta</option><option value="qui">Quinta</option>
-            <option value="sex">Sexta</option>
+            <option value="seg">Segunda-feira</option>
+            <option value="ter">Terça-feira</option>
+            <option value="qua">Quarta-feira</option>
+            <option value="qui">Quinta-feira</option>
+            <option value="sex">Sexta-feira</option>
           </select>
         </div>
         <div class="form-group">
           <label>Período</label>
           <select name="periodo" required>
-            <option>Matutino</option><option>Vespertino</option>
+            <option>Matutino</option>
+            <option>Vespertino</option>
           </select>
         </div>
       </div>
@@ -552,8 +636,10 @@
         <div class="form-group">
           <label>Embalagem</label>
           <select id="embalagem" required>
-            <option>Granel</option><option>Big Bag</option>
-            <option>Sacaria 60 kgs</option><option>Sacaria 30 kgs</option>
+            <option>Granel</option>
+            <option>Big Bag</option>
+            <option>Sacaria 60 kgs</option>
+            <option>Sacaria 30 kgs</option>
           </select>
         </div>
       </div>
@@ -561,8 +647,10 @@
       <div class="form-group">
         <label>Tipo</label>
         <select id="tipo" required>
-          <option>Bica Corrida</option><option>Peneira</option>
-          <option>Liga</option><option>Café Especial</option>
+          <option>Bica Corrida</option>
+          <option>Peneira</option>
+          <option>Liga</option>
+          <option>Café Especial</option>
         </select>
       </div>
 
@@ -574,7 +662,7 @@
       <div class="form-actions">
         <button type="button" class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
         <button type="submit" class="btn btn-primary">
-          <i class="fa-solid fa-floppy-disk"></i> Salvar
+          <i class="fa-solid fa-floppy-disk"></i> Salvar Embarque
         </button>
       </div>
     </form>
@@ -584,100 +672,32 @@
 <!-- TOAST -->
 <div id="toast"></div>
 
-<!-- ═══════════════════════════════════════════════════
-     README — INSTRUÇÕES DE CONFIGURAÇÃO
-═══════════════════════════════════════════════════ -->
-<div id="readme" style="
-  margin: 40px 32px;
-  background: #fff;
-  border: 1px solid var(--border, #dde3ed);
-  border-radius: 14px;
-  padding: 28px 32px;
-  font-size: 14px;
-  line-height: 1.8;
-  box-shadow: 0 2px 12px rgba(11,44,77,0.07);
-">
-  <h2 style="font-family:'Syne',sans-serif;color:#0b2c4d;margin-bottom:16px;">
-    📋 Como configurar o banco de dados (Firebase)
-  </h2>
-
-  <p><strong>Passo 1 — Criar conta no Firebase (grátis)</strong><br>
-  Acesse <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a>
-  e faça login com sua conta Google.</p>
-
-  <p><strong>Passo 2 — Criar um projeto</strong><br>
-  Clique em "Adicionar projeto", dê o nome que quiser (ex: <em>super-safra</em>),
-  desative o Google Analytics se não precisar, e clique em "Criar projeto".</p>
-
-  <p><strong>Passo 3 — Adicionar app Web</strong><br>
-  Dentro do projeto, clique no ícone <code>&lt;/&gt;</code> (Web), dê um apelido
-  (ex: <em>embarques</em>) e clique em "Registrar app".<br>
-  Copie o objeto <code>firebaseConfig</code> que aparece na tela.</p>
-
-  <p><strong>Passo 4 — Colar as credenciais neste arquivo</strong><br>
-  Abra <code>embarques-semanais.html</code> em qualquer editor de texto (Bloco de Notas serve),
-  localize o trecho:<br>
-  <code style="background:#f0f4f8;padding:2px 6px;border-radius:4px;">const firebaseConfig = { apiKey: "COLE_AQUI" …</code><br>
-  e substitua cada campo pelo valor do seu projeto.</p>
-
-  <p><strong>Passo 5 — Criar o banco Firestore</strong><br>
-  No painel do Firebase, vá em <strong>Firestore Database → Criar banco de dados</strong>.<br>
-  Escolha o modo <strong>Produção</strong> e selecione a região <em>southamerica-east1</em> (São Paulo).</p>
-
-  <p><strong>Passo 6 — Liberar acesso de leitura/escrita</strong><br>
-  Em <strong>Firestore → Regras</strong>, cole as regras abaixo e publique:<br>
-  <pre style="background:#f0f4f8;padding:12px;border-radius:8px;font-size:13px;">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /embarques/{doc} {
-      allow read, write: if true;
-    }
-  }
-}</pre>
-  (Isso libera acesso público. Para uso interno restrito, configure autenticação depois.)</p>
-
-  <p><strong>Passo 7 — Publicar no GitHub Pages</strong><br>
-  1. Crie uma conta no <a href="https://github.com" target="_blank">GitHub</a> se não tiver.<br>
-  2. Crie um repositório público (ex: <em>embarques-super-safra</em>).<br>
-  3. Faça upload do <code>embarques-semanais.html</code> com as credenciais já preenchidas.<br>
-  4. Vá em <strong>Settings → Pages</strong>, selecione a branch <em>main</em> e salve.<br>
-  5. Em alguns minutos seu sistema estará em:<br>
-  <code style="background:#f0f4f8;padding:2px 8px;border-radius:4px;">
-    https://SEU-USUARIO.github.io/embarques-super-safra/embarques-semanais.html
-  </code></p>
-
-  <p style="margin-top:20px;padding:12px 16px;background:#e4f4eb;border-radius:8px;color:#1b6b32;">
-    ✅ <strong>Plano gratuito do Firebase</strong> suporta 50.000 leituras e 20.000 escritas por dia —
-    mais do que suficiente para uso interno de uma equipe pequena.
-  </p>
-</div>
-
 <script>
-/* ══════════════════════════════════════
+/* ══════════════════════════════════
    ESTADO
-══════════════════════════════════════ */
+══════════════════════════════════ */
 let semanaAtual        = null;
 let dataBaseSemana     = new Date();
 let embarqueEditandoId = null;
 let firebaseOk         = false;
 
-/* ══════════════════════════════════════
-   STORE — wrapper sobre window.FireStore
-   com fallback para localStorage
-══════════════════════════════════════ */
+/* ══════════════════════════════════
+   STORE
+══════════════════════════════════ */
 const Store = {
   async get() {
-    if (firebaseOk && window.FireStore) return await window.FireStore.get();
+    if (firebaseOk && window.FireStore) {
+      try { return await window.FireStore.get(); } catch(_) {}
+    }
     try { return JSON.parse(localStorage.getItem('ss-embarques') || '{}'); } catch(_) { return {}; }
   },
 
   async set(data) {
     setSyncing(true);
     if (firebaseOk && window.FireStore) {
-      await window.FireStore.set(data);
-    } else {
-      try { localStorage.setItem('ss-embarques', JSON.stringify(data)); } catch(_) {}
+      try { await window.FireStore.set(data); setSyncing(false); return; } catch(_) {}
     }
+    try { localStorage.setItem('ss-embarques', JSON.stringify(data)); } catch(_) {}
     setSyncing(false);
   },
 
@@ -686,27 +706,31 @@ const Store = {
   }
 };
 
-/* ══════════════════════════════════════
+/* ══════════════════════════════════
    UI HELPERS
-══════════════════════════════════════ */
+══════════════════════════════════ */
 function setSyncing(v) {
-  const dot   = document.getElementById('sync-dot');
-  const label = document.getElementById('sync-label');
-  if (v) { dot.className = 'sync-dot syncing'; label.textContent = 'Salvando…'; }
-  else   { dot.className = 'sync-dot';         label.textContent = 'Sincronizado ✓'; }
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className    = v ? 'sync-dot syncing' : 'sync-dot';
+  lbl.textContent  = v ? 'Salvando…'        : 'Sincronizado ✓';
 }
 
-function setOffline() {
-  const dot   = document.getElementById('sync-dot');
-  const label = document.getElementById('sync-label');
-  dot.className   = 'sync-dot offline';
-  label.textContent = 'Sem Firebase (local)';
+function setStatus(estado) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  const map = {
+    online:  ['sync-dot',         'Firebase conectado ✓'],
+    offline: ['sync-dot offline', 'Modo local (sem internet)'],
+    waiting: ['sync-dot syncing', 'Conectando…'],
+  };
+  [dot.className, lbl.textContent] = map[estado] || map.waiting;
 }
 
 function setLoading(pct) {
   const bar = document.getElementById('loading-bar');
   bar.style.width = pct + '%';
-  if (pct >= 100) setTimeout(() => bar.style.width = '0', 400);
+  if (pct >= 100) setTimeout(() => bar.style.width = '0', 500);
 }
 
 function toast(msg, cor) {
@@ -715,12 +739,12 @@ function toast(msg, cor) {
   t.style.background = cor || '#0b2c4d';
   t.style.display = 'block';
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.style.display = 'none', 2500);
+  t._timer = setTimeout(() => t.style.display = 'none', 2800);
 }
 
-/* ══════════════════════════════════════
+/* ══════════════════════════════════
    MODAL
-══════════════════════════════════════ */
+══════════════════════════════════ */
 function abrirModal(titulo) {
   document.getElementById('modal-title-text').textContent = titulo || 'Novo Embarque';
   document.getElementById('modal-overlay').style.display = 'flex';
@@ -734,14 +758,14 @@ function fecharModal() {
   embarqueEditandoId = null;
 }
 
-/* ══════════════════════════════════════
+/* ══════════════════════════════════
    DATA / SEMANA
-══════════════════════════════════════ */
+══════════════════════════════════ */
 function getMonday(d) {
   d = new Date(d);
-  const day  = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.setDate(diff));
+  const day = d.getDay();
+  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+  return d;
 }
 
 function formatDate(date) {
@@ -767,17 +791,17 @@ function semanaEhPassada() {
 async function carregarSemana(date) {
   setLoading(40);
   semanaAtual = getISOWeekKey(date);
+  const monday = getMonday(new Date(date));
 
-  const monday = getMonday(date);
   ['seg','ter','qua','qui','sex'].forEach((dia, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
     document.getElementById(`dia-${dia}`).textContent =
-      dia.toUpperCase() + ' ' + formatDate(d);
+      dia.toUpperCase() + ' · ' + formatDate(d);
   });
 
   document.getElementById('semana-label').textContent =
-    `Semana ${getISOWeek(date)} · ${date.getFullYear()}`;
+    `Semana ${getISOWeek(date)} de ${date.getFullYear()}`;
 
   setLoading(80);
   await renderizarEmbarques();
@@ -795,9 +819,9 @@ function voltarSemanaAtual() {
   carregarSemana(dataBaseSemana);
 }
 
-/* ══════════════════════════════════════
+/* ══════════════════════════════════
    RENDER
-══════════════════════════════════════ */
+══════════════════════════════════ */
 function limparGrid() {
   document.querySelectorAll('.agenda-row:not(.total-row) .cell').forEach(c => c.innerHTML = '');
 }
@@ -821,12 +845,43 @@ function prepararDropZones() {
   });
 }
 
+function criarCardEmbarque(e, passado) {
+  const nomes = { cooxupe:'COOXUPÉ', ofi:'OFI', nkg:'NKG STOCKLER', outros:'OUTROS' };
+
+  const div = document.createElement('div');
+  div.className  = `embarque ${e.cliente}`;
+  div.dataset.id = e.id;
+
+  if (passado) { div.draggable = false; div.style.opacity = '0.65'; }
+  else {
+    div.draggable = true;
+    div.addEventListener('dragstart', ev => ev.dataTransfer.setData('text/plain', e.id));
+  }
+
+  div.innerHTML = `
+    <div class="embarque-cliente">${nomes[e.cliente] || e.cliente.toUpperCase()}</div>
+    <div class="embarque-info">
+      <span><strong>Sacas:</strong> ${Number(e.sacas).toLocaleString('pt-BR')}</span>
+      <span><strong>Embalagem:</strong> ${e.embalagem}</span>
+      <span><strong>Tipo:</strong> ${e.tipo}</span>
+      ${e.ra      ? `<span><strong>RA:</strong> ${e.ra}</span>` : ''}
+      ${e.peneira ? `<span><strong>Peneira:</strong> ${e.peneira}</span>` : ''}
+    </div>
+    ${!passado ? `
+    <div class="embarque-acoes">
+      <button class="btn-edit" onclick="editarEmbarque('${e.id}')">✏️ Editar</button>
+      <button class="btn-del"  onclick="excluirEmbarque('${e.id}')">🗑️</button>
+    </div>` : ''}
+  `;
+
+  return div;
+}
+
 async function renderizarEmbarques() {
   limparGrid();
   const dados   = await Store.get();
   const lista   = dados[semanaAtual] || [];
   const passado = semanaEhPassada();
-  const nomes   = { cooxupe:'COOXUPÉ', ofi:'OFI', nkg:'NKG STOCKLER', outros:'OUTROS' };
 
   prepararDropZones();
 
@@ -837,47 +892,43 @@ async function renderizarEmbarques() {
     if (!row) return;
     const cell = row.children[colIndex];
     if (!cell) return;
-
-    const div = document.createElement('div');
-    div.className  = `embarque ${e.cliente}`;
-    div.dataset.id = e.id;
-
-    if (passado) { div.draggable = false; div.style.opacity = '0.7'; }
-    else {
-      div.draggable = true;
-      div.addEventListener('dragstart', ev => ev.dataTransfer.setData('text/plain', e.id));
-    }
-
-    div.innerHTML = `
-      <div class="embarque-cliente">${nomes[e.cliente] || e.cliente.toUpperCase()}</div>
-      <div class="embarque-info">
-        <span><strong>Sacas:</strong> ${e.sacas}</span>
-        <span><strong>Emb.:</strong> ${e.embalagem}</span>
-        <span><strong>Tipo:</strong> ${e.tipo}</span>
-        ${e.ra      ? `<span><strong>RA:</strong> ${e.ra}</span>` : ''}
-        ${e.peneira ? `<span><strong>Pen.:</strong> ${e.peneira}</span>` : ''}
-      </div>
-      ${!passado ? `
-      <div class="embarque-acoes">
-        <button class="btn-edit" onclick="editarEmbarque('${e.id}')">✏️ Editar</button>
-        <button class="btn-del"  onclick="excluirEmbarque('${e.id}')">🗑️</button>
-      </div>` : ''}
-    `;
-
-    cell.appendChild(div);
+    cell.appendChild(criarCardEmbarque(e, passado));
   });
 
   atualizarTotaisPorDia(lista);
   atualizarInsights(lista);
 }
 
-/* ══════════════════════════════════════
+function renderizarComDados(todosOsDados) {
+  const lista   = todosOsDados[semanaAtual] || [];
+  const passado = semanaEhPassada();
+
+  limparGrid();
+  prepararDropZones();
+
+  lista.forEach(e => {
+    const colIndex = { seg:1, ter:2, qua:3, qui:4, sex:5 }[e.dia];
+    const rowId    = e.periodo === 'Matutino' ? 'row-matutino' : 'row-vespertino';
+    const row      = document.getElementById(rowId);
+    if (!row) return;
+    const cell = row.children[colIndex];
+    if (!cell) return;
+    cell.appendChild(criarCardEmbarque(e, passado));
+  });
+
+  atualizarTotaisPorDia(lista);
+  atualizarInsights(lista);
+}
+
+/* ══════════════════════════════════
    TOTAIS & INSIGHTS
-══════════════════════════════════════ */
+══════════════════════════════════ */
 function atualizarTotaisPorDia(lista) {
   const t = { seg:0, ter:0, qua:0, qui:0, sex:0 };
   lista.forEach(e => { if (t[e.dia] !== undefined) t[e.dia] += Number(e.sacas); });
-  document.querySelectorAll('.total-cell').forEach(c => c.textContent = t[c.dataset.dia] || 0);
+  document.querySelectorAll('.total-cell').forEach(c => {
+    c.textContent = t[c.dataset.dia] ? Number(t[c.dataset.dia]).toLocaleString('pt-BR') : '—';
+  });
 }
 
 function atualizarInsights(lista) {
@@ -898,17 +949,16 @@ function atualizarInsights(lista) {
   document.getElementById('insight-cliente-embarques').textContent = mqtd ? nomes[mqtd] : '—';
 }
 
-/* ══════════════════════════════════════
+/* ══════════════════════════════════
    DRAG & MOVE
-══════════════════════════════════════ */
+══════════════════════════════════ */
 async function moverEmbarque(id, novoDia, novoPeriodo) {
   const dados = await Store.get();
   let encontrado = false;
   for (const s in dados) {
     const idx = dados[s].findIndex(e => e.id === id);
     if (idx !== -1) {
-      dados[s][idx].dia     = novoDia;
-      dados[s][idx].periodo = novoPeriodo;
+      dados[s][idx].dia = novoDia; dados[s][idx].periodo = novoPeriodo;
       encontrado = true; break;
     }
   }
@@ -923,9 +973,9 @@ async function moverEmbarque(id, novoDia, novoPeriodo) {
   }
 }
 
-/* ══════════════════════════════════════
+/* ══════════════════════════════════
    CRUD
-══════════════════════════════════════ */
+══════════════════════════════════ */
 async function excluirEmbarque(id) {
   if (!confirm('Deseja excluir este embarque?')) return;
   const dados = await Store.get();
@@ -955,11 +1005,12 @@ async function editarEmbarque(id) {
   if (embarque.peneira) document.getElementById('input-peneira').value = embarque.peneira;
 }
 
-/* ══════════════════════════════════════
+/* ══════════════════════════════════
    DOM READY
-══════════════════════════════════════ */
+══════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
 
+  /* Condicionais */
   document.getElementById('cliente').addEventListener('change', function() {
     document.getElementById('campo-ra').style.display = this.value === 'cooxupe' ? 'flex' : 'none';
   });
@@ -968,10 +1019,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('campo-peneira').style.display = this.value === 'Peneira' ? 'flex' : 'none';
   });
 
+  /* Fechar modal clicando fora */
   document.getElementById('modal-overlay').addEventListener('click', function(e) {
     if (e.target === this) fecharModal();
   });
 
+  /* Submit */
   document.getElementById('form-embarque').addEventListener('submit', async function(e) {
     e.preventDefault();
     if (!document.getElementById('cliente').value) return alert('Selecione o cliente');
@@ -1010,75 +1063,38 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('✅ Embarque salvo com sucesso');
   });
 
+  /* Seletor de data */
   document.getElementById('seletor-data').addEventListener('change', function() {
     if (!this.value) return;
     dataBaseSemana = new Date(this.value + 'T12:00:00');
     carregarSemana(dataBaseSemana);
   });
 
-  /* Aguarda Firebase inicializar */
+  /* ── Firebase pronto ── */
   window.addEventListener('firebase-ready', async () => {
     firebaseOk = true;
-    document.getElementById('config-banner').classList.add('hidden');
-
-    const dot   = document.getElementById('sync-dot');
-    const label = document.getElementById('sync-label');
-    dot.className    = 'sync-dot';
-    label.textContent = 'Firebase conectado ✓';
-
+    setStatus('online');
     await carregarSemana(new Date());
 
-    /* Escuta mudanças em tempo real de outros usuários */
-    Store.listen(async (todosOsDados) => {
-      const lista = todosOsDados[semanaAtual] || [];
-      limparGrid();
-      prepararDropZones();
-      const nomes = { cooxupe:'COOXUPÉ', ofi:'OFI', nkg:'NKG STOCKLER', outros:'OUTROS' };
-      const passado = semanaEhPassada();
-      lista.forEach(e => {
-        const colIndex = { seg:1, ter:2, qua:3, qui:4, sex:5 }[e.dia];
-        const rowId    = e.periodo === 'Matutino' ? 'row-matutino' : 'row-vespertino';
-        const row      = document.getElementById(rowId);
-        if (!row) return;
-        const cell = row.children[colIndex];
-        if (!cell) return;
-        const div = document.createElement('div');
-        div.className = `embarque ${e.cliente}`;
-        div.dataset.id = e.id;
-        if (passado) { div.draggable = false; div.style.opacity = '0.7'; }
-        else {
-          div.draggable = true;
-          div.addEventListener('dragstart', ev => ev.dataTransfer.setData('text/plain', e.id));
-        }
-        div.innerHTML = `
-          <div class="embarque-cliente">${nomes[e.cliente] || e.cliente.toUpperCase()}</div>
-          <div class="embarque-info">
-            <span><strong>Sacas:</strong> ${e.sacas}</span>
-            <span><strong>Emb.:</strong> ${e.embalagem}</span>
-            <span><strong>Tipo:</strong> ${e.tipo}</span>
-            ${e.ra      ? `<span><strong>RA:</strong> ${e.ra}</span>` : ''}
-            ${e.peneira ? `<span><strong>Pen.:</strong> ${e.peneira}</span>` : ''}
-          </div>
-          ${!passado ? `
-          <div class="embarque-acoes">
-            <button class="btn-edit" onclick="editarEmbarque('${e.id}')">✏️ Editar</button>
-            <button class="btn-del"  onclick="excluirEmbarque('${e.id}')">🗑️</button>
-          </div>` : ''}
-        `;
-        cell.appendChild(div);
-      });
-      atualizarTotaisPorDia(lista);
-      atualizarInsights(lista);
+    /* Escuta em tempo real */
+    Store.listen(todosOsDados => {
+      renderizarComDados(todosOsDados);
     });
   });
 
-  /* Se Firebase não inicializar em 4s, cai no fallback local */
+  /* ── Firebase com erro ── */
+  window.addEventListener('firebase-error', async () => {
+    setStatus('offline');
+    await carregarSemana(new Date());
+  });
+
+  /* ── Timeout aumentado para 10s ── */
   setTimeout(() => {
     if (!firebaseOk) {
-      setOffline();
+      setStatus('offline');
       carregarSemana(new Date());
     }
-  }, 4000);
+  }, 10000);
 });
 </script>
 </body>
