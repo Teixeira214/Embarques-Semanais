@@ -41,11 +41,6 @@
           });
         }
       };
-
-      window.dispatchEvent(new Event("firebase-ready"));
-    } catch(err) {
-      console.error("Firebase init error:", err);
-      window.dispatchEvent(new Event("firebase-error"));
     }
   </script>
 
@@ -1071,10 +1066,38 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ── Firebase pronto ── */
-  window.addEventListener('firebase-ready', async () => {
+  async function initApp() {
+  setStatus('waiting');
+
+  try {
+    await testarConexao();
+
     firebaseOk = true;
     setStatus('online');
+
     await carregarSemana(new Date());
+
+  } catch (err) {
+    firebaseOk = false;
+    setStatus('offline');
+    await carregarSemana(new Date());
+  }
+}
+
+initApp();
+
+    async function testarConexao() {
+  if (!window.FireStore) throw new Error("Firebase não inicializado");
+
+  try {
+    await window.FireStore.get();
+    console.log("🔥 Firebase respondeu (getDoc)");
+    return true;
+  } catch (err) {
+    console.error("Erro Firebase:", err);
+    throw err;
+  }
+}
 
     /* Escuta em tempo real */
     Store.listen(todosOsDados => {
@@ -1090,11 +1113,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ── Timeout aumentado para 10s ── */
   setTimeout(() => {
-    if (!firebaseOk) {
-      setStatus('offline');
-      carregarSemana(new Date());
-    }
-  }, 10000);
+  if (!firebaseOk) {
+    console.warn("Firebase demorou, fallback local");
+    setStatus('offline');
+  }
+}, 10000);
 });
 </script>
 </body>
