@@ -6,6 +6,7 @@
   <title>Embarques Semanais – Super Safra</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <script type="module">
     import { initializeApp }
@@ -552,6 +553,25 @@
 
     .embarque-movido { animation: destaque 1s ease; }
 
+    /* ══════════════════════════════
+       BOTÃO CAPTURA
+    ══════════════════════════════ */
+    .btn-capture {
+      background: #0f7d50; color: #fff;
+      font-size: 14px; padding: 11px 20px;
+      display: inline-flex; align-items: center; gap: 8px;
+      border-radius: 9px; border: none;
+      cursor: pointer; font-family: 'DM Sans', sans-serif;
+      font-weight: 600; transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-capture:hover  { opacity: 0.88; transform: translateY(-1px); }
+    .btn-capture:active { transform: scale(0.97); }
+    .btn-capture.loading { opacity: 0.7; pointer-events: none; }
+
+    /* durante a captura: esconde botões de ação e o próprio botão de captura */
+    .capturando .embarque-acoes { display: none !important; }
+    .capturando .btn-capture     { display: none !important; }
+
     @keyframes destaque {
       0%  { box-shadow: 0 0 0 0   rgba(255,255,255,0); }
       40% { box-shadow: 0 0 0 6px rgba(255,255,255,0.6); }
@@ -643,9 +663,14 @@
     </button>
     <input type="date" id="seletor-data" class="seletor-data" title="Ir para semana específica">
   </div>
-  <button class="btn btn-success" onclick="abrirModal()">
-    <i class="fa-solid fa-plus"></i> Novo Embarque
-  </button>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <button class="btn-capture" id="btn-captura" onclick="capturarAgenda()">
+      <i class="fa-solid fa-camera"></i> Copiar Agenda
+    </button>
+    <button class="btn btn-success" onclick="abrirModal()">
+      <i class="fa-solid fa-plus"></i> Novo Embarque
+    </button>
+  </div>
 </div>
 
 <!-- LEGENDA -->
@@ -1117,6 +1142,99 @@ async function editarEmbarque(id) {
   document.getElementById('tipo').dispatchEvent(new Event('change'));
   if (embarque.ra)      document.getElementById('input-ra').value      = embarque.ra;
   if (embarque.peneira) document.getElementById('input-peneira').value = embarque.peneira;
+}
+
+/* ══════════════════════════════════
+   CAPTURA DA AGENDA
+══════════════════════════════════ */
+async function capturarAgenda() {
+  const btn = document.getElementById('btn-captura');
+  const agenda = document.querySelector('.agenda');
+  const legenda = document.querySelector('.legenda');
+  const semanaLabel = document.getElementById('semana-label').textContent;
+
+  if (!agenda) { toast('❌ Agenda não encontrada'); return; }
+
+  btn.classList.add('loading');
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Capturando…';
+
+  // Esconde botões de edição durante o print
+  document.body.classList.add('capturando');
+
+  try {
+    // Monta um wrapper temporário com legenda + agenda para capturar juntos
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `
+      position: fixed; left: -9999px; top: 0;
+      background: #e8edf4; padding: 20px 24px 24px;
+      width: ${agenda.offsetWidth + 48}px;
+      font-family: 'DM Sans', sans-serif;
+    `;
+
+    // Cabeçalho do print
+    const header = document.createElement('div');
+    header.style.cssText = `
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    `;
+    header.innerHTML = `
+      <div style="font-size:17px;font-weight:800;color:#0b2c4d;">
+        📦 Embarques Semanais
+      </div>
+      <div style="font-size:13px;color:#5a6f87;font-weight:500;">
+        Semana: ${semanaLabel}
+      </div>
+    `;
+    wrapper.appendChild(header);
+
+    // Clona legenda e agenda
+    const legendaClone = legenda.cloneNode(true);
+    legendaClone.style.marginBottom = '12px';
+    legendaClone.querySelectorAll('.embarque-acoes').forEach(el => el.remove());
+    wrapper.appendChild(legendaClone);
+
+    const agendaClone = agenda.cloneNode(true);
+    agendaClone.querySelectorAll('.embarque-acoes').forEach(el => el.remove());
+    wrapper.appendChild(agendaClone);
+
+    document.body.appendChild(wrapper);
+
+    const canvas = await html2canvas(wrapper, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#e8edf4',
+      logging: false,
+    });
+
+    document.body.removeChild(wrapper);
+
+    // Copia para o clipboard
+    canvas.toBlob(async (blob) => {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        toast('📋 Agenda copiada! Cole no WhatsApp (Ctrl+V)', '#1a6b30');
+      } catch (err) {
+        // Fallback: faz download se clipboard não for permitido
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `agenda-${semanaLabel.replace(/\//g,'-')}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast('💾 Imagem salva (clipboard não disponível neste navegador)', '#b45309');
+      }
+    }, 'image/png');
+
+  } catch (err) {
+    toast('❌ Erro ao capturar: ' + err.message, '#b91c1c');
+    console.error(err);
+  } finally {
+    document.body.classList.remove('capturando');
+    btn.classList.remove('loading');
+    btn.innerHTML = '<i class="fa-solid fa-camera"></i> Copiar Agenda';
+  }
 }
 
 /* ══════════════════════════════════
