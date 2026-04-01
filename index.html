@@ -8,11 +8,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <script type="module">
-    import { initializeApp }     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { initializeApp }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, doc, getDoc, setDoc, onSnapshot }
-                                 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    /* ── SUAS CREDENCIAIS ── */
     const firebaseConfig = {
       apiKey:            "AIzaSyAP96jmOcqIxrIhIxpQr_-eQJteSFARWiU",
       authDomain:        "embarques-semanais-345f5.firebaseapp.com",
@@ -30,43 +30,58 @@
       window.FireStore = {
         async get() {
           const snap = await getDoc(REF);
-          return snap.exists() ? snap.data().payload : {};
+          if (!snap.exists()) {
+            await setDoc(REF, { payload: {} });
+            return {};
+          }
+          return snap.data().payload || {};
         },
         async set(data) {
-          await setDoc(REF, { payload: data });
+          await setDoc(REF, { payload: data }, { merge: true });
         },
         listen(cb) {
-          return onSnapshot(REF, snap => {
-            if (snap.exists()) cb(snap.data().payload);
-          });
+          return onSnapshot(REF,
+            snap => { if (snap.exists()) cb(snap.data().payload || {}); },
+            err  => console.error("onSnapshot:", err.code)
+          );
         }
       };
+
+      window.FireStore.get()
+        .then(() => window.dispatchEvent(new CustomEvent("firebase-ready")))
+        .catch(err => window.dispatchEvent(new CustomEvent("firebase-error", { detail: err.message })));
+
+    } catch(err) {
+      window.dispatchEvent(new CustomEvent("firebase-error", { detail: err.message }));
     }
   </script>
 
   <style>
     :root {
-      --primary:    #0b2c4d;
-      --primary-lt: #1a4a7a;
-      --bg:         #eef2f7;
-      --surface:    #ffffff;
-      --border:     #d8e0ec;
-      --text:       #0f1f2e;
-      --muted:      #5a6f87;
+      --primary:     #0b2c4d;
+      --primary-lt:  #1a4a7a;
+      --bg:          #e8edf4;
+      --surface:     #ffffff;
+      --border:      #d0dae8;
+      --text:        #0f1f2e;
+      --muted:       #5a6f87;
 
-      --cooxupe:    #7c4a1e;
-      --ofi:        #6a1b9a;
-      --nkg:        #1b6b32;
-      --outros:     #c67c00;
+      /* Cores sólidas dos clientes — usadas nos cards de embarque */
+      --cooxupe:     #7c4a1e;
+      --ofi:         #5b169a;
+      --nkg:         #1b6b32;
+      --outros:      #b56d00;
 
-      --cooxupe-lt: #f5ede4;
-      --ofi-lt:     #f3e8fb;
-      --nkg-lt:     #e4f4eb;
-      --outros-lt:  #fdf3dc;
+      /* Versões claras para fundo dos cards de métrica */
+      --cooxupe-lt:  #f3e5d8;
+      --ofi-lt:      #ede0fa;
+      --nkg-lt:      #d8f0e2;
+      --outros-lt:   #faefd4;
 
-      --radius:    12px;
-      --shadow:    0 2px 14px rgba(11,44,77,0.09);
-      --shadow-lg: 0 8px 36px rgba(11,44,77,0.15);
+      --radius:      12px;
+      --shadow:      0 2px 12px rgba(11,44,77,0.08);
+      --shadow-md:   0 4px 20px rgba(11,44,77,0.12);
+      --shadow-lg:   0 8px 36px rgba(11,44,77,0.16);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -78,15 +93,15 @@
       min-height: 100vh;
     }
 
-    /* ════════════════════════
-       HEADER — maior e mais impactante
-    ════════════════════════ */
+    /* ══════════════════════════════
+       HEADER
+    ══════════════════════════════ */
     .header {
       background: var(--primary);
       color: #fff;
       padding: 0 40px;
       display: flex; align-items: center; justify-content: space-between;
-      height: 80px;                       /* ↑ era 64px */
+      height: 80px;
       position: sticky; top: 0; z-index: 100;
       box-shadow: 0 3px 20px rgba(0,0,0,0.22);
     }
@@ -94,98 +109,120 @@
     .header-left { display: flex; align-items: center; gap: 18px; }
 
     .logo {
-      width: 48px; height: 48px;          /* ↑ era 38px */
+      width: 48px; height: 48px;
       background: #fff; color: var(--primary);
       border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
       font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px;
-      letter-spacing: -0.5px; flex-shrink: 0;
+      flex-shrink: 0;
     }
 
     .header-titles { display: flex; flex-direction: column; gap: 1px; }
 
     .header h1 {
       font-family: 'Syne', sans-serif;
-      font-size: 26px;                    /* ↑ era 18px */
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      line-height: 1.1;
+      font-size: 26px; font-weight: 800;
+      letter-spacing: -0.5px; line-height: 1.1;
     }
 
     .header-sub {
-      font-size: 12px;
-      opacity: 0.6;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
+      font-size: 12px; opacity: 0.6;
+      letter-spacing: 0.5px; text-transform: uppercase;
     }
 
-    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-right { display: flex; align-items: center; }
 
-    /* Sync badge */
     .sync-badge {
-      display: flex; align-items: center; gap: 7px;
-      font-size: 13px; color: rgba(255,255,255,0.8);
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 500;
+      color: rgba(255,255,255,0.88);
       background: rgba(255,255,255,0.1);
-      padding: 6px 14px; border-radius: 20px;
+      padding: 7px 16px; border-radius: 20px;
     }
 
     .sync-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: #4ade80; flex-shrink: 0;
-      transition: background 0.3s;
+      background: #94a3b8; flex-shrink: 0;
+      transition: background 0.4s;
     }
 
-    .sync-dot.syncing { background: #fbbf24; animation: pulse 0.8s infinite; }
-    .sync-dot.offline { background: #f87171; }
+    .sync-dot.online   { background: #4ade80; }
+    .sync-dot.syncing  { background: #fbbf24; animation: pulse 0.9s infinite; }
+    .sync-dot.offline  { background: #f87171; }
 
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
-    /* ════════════════════════
-       INSIGHTS — cards maiores
-    ════════════════════════ */
+    /* ══════════════════════════════
+       CARDS DE MÉTRICA — redesenhados
+       Layout: ícone grande no topo,
+       número centralizado, sem esticar
+    ══════════════════════════════ */
     .insights {
-      display: grid; grid-template-columns: repeat(4,1fr);
-      gap: 16px; padding: 24px 40px 0;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 280px));
+      justify-content: center;
+      gap: 16px;
+      padding: 28px 40px 0;
     }
 
-    .card {
-      background: var(--surface); border-radius: var(--radius);
-      padding: 22px 24px;                 /* ↑ era 16px 18px */
-      display: flex; align-items: center; gap: 18px;
-      box-shadow: var(--shadow); border: 1px solid var(--border);
-      transition: transform 0.15s, box-shadow 0.15s;
+    .metric-card {
+      background: var(--surface);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 24px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+      transition: transform 0.18s, box-shadow 0.18s;
+      min-width: 0;
     }
 
-    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .metric-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
 
-    .card-icon {
-      width: 56px; height: 56px;          /* ↑ era 42px */
-      border-radius: 14px; background: #e4eaf5;
+    .metric-icon-wrap {
+      width: 60px; height: 60px;
+      border-radius: 16px;
       display: flex; align-items: center; justify-content: center;
-      color: var(--primary); font-size: 22px; flex-shrink: 0;
+      font-size: 24px;
+      flex-shrink: 0;
     }
 
-    .card-text { min-width: 0; }
+    /* Cada card tem cor própria */
+    .metric-card:nth-child(1) .metric-icon-wrap { background: #deeeff; color: #1565c0; }
+    .metric-card:nth-child(2) .metric-icon-wrap { background: #d8f0e2; color: #1b6b32; }
+    .metric-card:nth-child(3) .metric-icon-wrap { background: #f3e0fa; color: #6a1b9a; }
+    .metric-card:nth-child(4) .metric-icon-wrap { background: #fdefd4; color: #b56d00; }
 
-    .card-text span {
-      font-size: 12px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted);
-      display: block; margin-bottom: 4px;
+    .metric-label {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--muted);
     }
 
-    .card-text h2 {
+    .metric-value {
       font-family: 'Syne', sans-serif;
-      font-size: 28px;                    /* ↑ era 22px */
-      font-weight: 800; color: var(--text);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-size: 32px; font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+      /* garante que não estica o card */
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    /* ════════════════════════
+    /* ══════════════════════════════
        TOOLBAR
-    ════════════════════════ */
+    ══════════════════════════════ */
     .toolbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 40px; gap: 12px; flex-wrap: wrap;
+      padding: 22px 40px; gap: 12px; flex-wrap: wrap;
     }
 
     .toolbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -218,7 +255,7 @@
 
     .btn-ghost   { background: var(--surface); color: var(--primary); border: 1px solid var(--border); }
     .btn-primary { background: var(--primary); color: #fff; }
-    .btn-success { background: #1a6b30; color: #fff; font-size: 14px; padding: 11px 18px; }
+    .btn-success { background: #1a6b30; color: #fff; font-size: 14px; padding: 11px 20px; }
 
     input[type="date"].seletor-data {
       padding: 9px 14px; border-radius: 9px;
@@ -227,15 +264,15 @@
       color: var(--primary); cursor: pointer;
     }
 
-    /* ════════════════════════
+    /* ══════════════════════════════
        LEGENDA
-    ════════════════════════ */
+    ══════════════════════════════ */
     .legenda { display: flex; gap: 10px; padding: 0 40px 18px; flex-wrap: wrap; }
 
     .leg {
       display: flex; align-items: center; gap: 9px;
       padding: 7px 14px; border-radius: 8px;
-      font-size: 13px; font-weight: 700; letter-spacing: 0.2px;
+      font-size: 13px; font-weight: 700;
     }
 
     .leg-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
@@ -250,14 +287,15 @@
     .leg.nkg     .leg-dot { background: var(--nkg); }
     .leg.outros  .leg-dot { background: var(--outros); }
 
-    /* ════════════════════════
+    /* ══════════════════════════════
        GRID
-    ════════════════════════ */
+    ══════════════════════════════ */
     .agenda { padding: 0 40px 40px; }
 
     .grid-wrap {
       background: var(--surface); border-radius: 16px;
-      border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow);
+      border: 1px solid var(--border); overflow: hidden;
+      box-shadow: var(--shadow);
     }
 
     .agenda-header, .agenda-row {
@@ -267,9 +305,10 @@
     .agenda-header { background: var(--primary); color: #fff; }
 
     .agenda-header div {
-      padding: 14px 12px; text-align: center;
+      padding: 14px 10px; text-align: center;
       font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
-      letter-spacing: 0.5px; border-right: 1px solid rgba(255,255,255,0.12);
+      letter-spacing: 0.4px;
+      border-right: 1px solid rgba(255,255,255,0.12);
     }
 
     .agenda-header div:last-child { border-right: none; }
@@ -282,98 +321,168 @@
     .agenda-row div:last-child { border-right: none; }
 
     .periodo {
-      background: #f4f7fb; font-size: 13px; font-weight: 700;
-      color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;
-      display: flex; align-items: center; justify-content: center; padding: 12px;
+      background: #f0f4fa; font-size: 13px; font-weight: 700;
+      color: var(--primary); text-transform: uppercase; letter-spacing: 0.4px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 12px 8px; text-align: center;
     }
 
+    /* ══════════════════════════════
+       CÉLULA — altura maior para acomodar cards
+    ══════════════════════════════ */
     .cell {
-      background: var(--surface); min-height: 110px; /* ↑ era 90px */
-      padding: 8px; transition: background 0.15s;
+      background: var(--surface);
+      min-height: 130px;
+      padding: 6px;
+      transition: background 0.15s;
+      vertical-align: top;
     }
 
     .cell.drag-over {
-      background: #dde8f5;
-      outline: 2px dashed var(--primary-lt); outline-offset: -4px;
+      background: #d8e8f8;
+      outline: 2px dashed var(--primary-lt);
+      outline-offset: -4px;
     }
 
     /* Total row */
-    .total-row .periodo { background: #e8edf6; font-size: 12px; }
+    .total-row .periodo { background: #e2e9f4; font-size: 11px; }
 
     .total-row .cell {
-      background: #e8edf6;
-      font-family: 'Syne', sans-serif; font-size: 18px; /* ↑ */
+      background: #e2e9f4;
+      font-family: 'Syne', sans-serif; font-size: 20px;
       font-weight: 800; color: var(--primary);
       display: flex; align-items: center; justify-content: center;
-      min-height: 50px;
+      min-height: 54px;
     }
 
-    /* ════════════════════════
-       EMBARQUE CARD — mais espaçoso e legível
-    ════════════════════════ */
+    /* ══════════════════════════════
+       CARD DE EMBARQUE — redesenhado
+       Fundo colorido sólido, texto branco,
+       centralizado, bem legível
+    ══════════════════════════════ */
     .embarque {
-      border-radius: 9px; padding: 10px 11px; /* ↑ era 7px 8px */
-      margin: 4px 0; font-size: 13px;         /* ↑ era 11.5px */
-      cursor: grab; position: relative;
-      transition: box-shadow 0.15s, transform 0.15s;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: 5px 2px;
+      cursor: grab;
+      position: relative;
+      transition: box-shadow 0.18s, transform 0.18s;
+      /* Texto centralizado */
+      text-align: center;
     }
 
-    .embarque:hover  { box-shadow: 0 5px 16px rgba(0,0,0,0.17); transform: translateY(-2px); }
+    .embarque:hover {
+      box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+      transform: translateY(-2px);
+    }
+
     .embarque:active { cursor: grabbing; }
 
-    .embarque.cooxupe { background: var(--cooxupe-lt); color: var(--cooxupe); border-left: 4px solid var(--cooxupe); }
-    .embarque.ofi     { background: var(--ofi-lt);     color: var(--ofi);     border-left: 4px solid var(--ofi); }
-    .embarque.nkg     { background: var(--nkg-lt);     color: var(--nkg);     border-left: 4px solid var(--nkg); }
-    .embarque.outros  { background: var(--outros-lt);  color: var(--outros);  border-left: 4px solid var(--outros); }
+    /* Fundos sólidos por cliente — muito mais visíveis */
+    .embarque.cooxupe { background: var(--cooxupe); color: #fff; }
+    .embarque.ofi     { background: var(--ofi);     color: #fff; }
+    .embarque.nkg     { background: var(--nkg);     color: #fff; }
+    .embarque.outros  { background: var(--outros);  color: #fff; }
 
+    /* Badge do nome do cliente no topo */
     .embarque-cliente {
-      font-family: 'Syne', sans-serif; font-size: 13px; /* ↑ era 11px */
-      font-weight: 800; letter-spacing: 0.4px; margin-bottom: 6px;
-      padding-bottom: 5px; border-bottom: 1px solid currentColor;
-      opacity: 0.9;
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      opacity: 0.95;
+      margin-bottom: 8px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid rgba(255,255,255,0.3);
     }
 
-    .embarque-info { display: flex; flex-direction: column; gap: 3px; } /* ↑ era 1px */
-
-    .embarque-info span {
-      font-size: 12px;  /* ↑ era 11px */
-      opacity: 1;
-      display: flex; align-items: center; gap: 4px;
+    /* Grade 2 colunas para as infos */
+    .embarque-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 8px;
+      margin-bottom: 6px;
     }
 
-    .embarque-info strong { font-weight: 700; }
+    .embarque-info .info-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(255,255,255,0.15);
+      border-radius: 6px;
+      padding: 4px 6px;
+    }
 
+    /* Quando só tem 1 item na linha (ex: tipo sozinho) */
+    .embarque-info .info-item.full {
+      grid-column: 1 / -1;
+    }
+
+    .embarque-info .info-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.75;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .embarque-info .info-val {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    /* Botões de ação */
     .embarque-acoes {
-      display: flex; justify-content: flex-end; gap: 5px; margin-top: 7px;
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 6px;
     }
 
     .embarque-acoes button {
-      border: none; border-radius: 5px; padding: 4px 9px; /* ↑ */
-      font-size: 11px; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-weight: 700;
-      transition: opacity 0.15s;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      transition: opacity 0.15s, transform 0.1s;
+      background: rgba(255,255,255,0.22);
+      color: #fff;
     }
 
-    .embarque-acoes button:hover { opacity: 0.75; }
-    .btn-edit { background: rgba(11,44,77,0.1); color: var(--primary); }
-    .btn-del  { background: rgba(200,30,30,0.1); color: #b91c1c; }
+    .embarque-acoes button:hover {
+      opacity: 0.85;
+      transform: scale(1.04);
+    }
 
-    /* ════════════════════════
+    .embarque-acoes .btn-del {
+      background: rgba(0,0,0,0.25);
+    }
+
+    /* ══════════════════════════════
        MODAL
-    ════════════════════════ */
+    ══════════════════════════════ */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(5,18,38,0.55);
+      position: fixed; inset: 0;
+      background: rgba(5,18,38,0.55);
       display: none; align-items: center; justify-content: center;
       z-index: 1000; backdrop-filter: blur(4px);
     }
 
     .modal {
       background: var(--surface); width: 480px; border-radius: 18px;
-      padding: 30px; box-shadow: var(--shadow-lg); animation: slideUp 0.2s ease;
+      padding: 30px; box-shadow: var(--shadow-lg);
+      animation: slideUp 0.22s ease;
     }
 
     @keyframes slideUp {
-      from { transform: translateY(18px); opacity: 0; }
+      from { transform: translateY(20px); opacity: 0; }
       to   { transform: translateY(0);    opacity: 1; }
     }
 
@@ -392,42 +501,41 @@
       color: var(--muted); text-transform: uppercase; margin-bottom: 6px;
     }
 
-    .form-group input, .form-group select {
-      padding: 10px 13px; border-radius: 9px; border: 1.5px solid var(--border);
+    .form-group input,
+    .form-group select {
+      padding: 10px 13px; border-radius: 9px;
+      border: 1.5px solid var(--border);
       font-family: 'DM Sans', sans-serif; font-size: 14px;
-      color: var(--text); background: #f6f9fc;
+      color: var(--text); background: #f4f7fc;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
 
-    .form-group input:focus, .form-group select:focus {
+    .form-group input:focus,
+    .form-group select:focus {
       outline: none; border-color: var(--primary-lt);
       box-shadow: 0 0 0 3px rgba(11,44,77,0.09);
       background: #fff;
     }
 
     .condicional { display: none; }
-    .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 
-    /* ════════════════════════
-       TOAST
-    ════════════════════════ */
+    .form-actions {
+      display: flex; justify-content: flex-end;
+      gap: 10px; margin-top: 8px;
+    }
+
+    /* ══════════════════════════════
+       TOAST & LOADING
+    ══════════════════════════════ */
     #toast {
       position: fixed; bottom: 28px; right: 28px;
       background: var(--primary); color: #fff;
       padding: 14px 20px; border-radius: 12px;
       font-size: 14px; font-weight: 500;
-      display: none; z-index: 9999; box-shadow: var(--shadow-lg);
-      animation: toastIn 0.25s ease;
+      display: none; z-index: 9999;
+      box-shadow: var(--shadow-lg);
     }
 
-    @keyframes toastIn {
-      from { transform: translateY(12px); opacity: 0; }
-      to   { transform: translateY(0);    opacity: 1; }
-    }
-
-    /* ════════════════════════
-       LOADING BAR
-    ════════════════════════ */
     #loading-bar {
       position: fixed; top: 0; left: 0; height: 3px;
       background: linear-gradient(90deg, #4dabf7, #74c0fc, #a5d8ff);
@@ -437,25 +545,30 @@
     .embarque-movido { animation: destaque 1s ease; }
 
     @keyframes destaque {
-      0%  { box-shadow: 0 0 0 0   rgba(11,44,77,0); }
-      35% { box-shadow: 0 0 0 5px rgba(11,44,77,0.3); }
-      100%{ box-shadow: 0 0 0 0   rgba(11,44,77,0); }
+      0%  { box-shadow: 0 0 0 0   rgba(255,255,255,0); }
+      40% { box-shadow: 0 0 0 6px rgba(255,255,255,0.6); }
+      100%{ box-shadow: 0 0 0 0   rgba(255,255,255,0); }
     }
 
-    /* ════════════════════════
-       RESPONSIVE
-    ════════════════════════ */
-    @media (max-width: 1024px) {
-      .insights { grid-template-columns: repeat(2,1fr); }
+    /* ══════════════════════════════
+       RESPONSIVO
+    ══════════════════════════════ */
+    @media (max-width: 1200px) {
+      .insights {
+        grid-template-columns: repeat(2, minmax(0, 280px));
+      }
     }
 
     @media (max-width: 700px) {
       .header { padding: 0 18px; height: 70px; }
       .header h1 { font-size: 20px; }
-      .insights { grid-template-columns: 1fr 1fr; padding: 16px 18px 0; }
+      .insights {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 16px 18px 0;
+      }
       .toolbar, .legenda, .agenda { padding-left: 18px; padding-right: 18px; }
-      .agenda-header, .agenda-row { grid-template-columns: 80px repeat(5,1fr); }
-      .card-text h2 { font-size: 22px; }
+      .agenda-header, .agenda-row { grid-template-columns: 75px repeat(5,1fr); }
+      .metric-value { font-size: 26px; }
     }
   </style>
 </head>
@@ -474,41 +587,33 @@
   </div>
   <div class="header-right">
     <div class="sync-badge">
-      <div class="sync-dot" id="sync-dot"></div>
+      <div class="sync-dot syncing" id="sync-dot"></div>
       <span id="sync-label">Conectando…</span>
     </div>
   </div>
 </header>
 
-<!-- INSIGHTS -->
+<!-- CARDS DE MÉTRICA -->
 <section class="insights">
-  <div class="card">
-    <div class="card-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
-    <div class="card-text">
-      <span>Total de Sacas</span>
-      <h2 id="insight-total-sacas">0</h2>
-    </div>
+  <div class="metric-card">
+    <div class="metric-icon-wrap"><i class="fa-solid fa-boxes-stacked"></i></div>
+    <div class="metric-label">Total de Sacas</div>
+    <div class="metric-value" id="insight-total-sacas">0</div>
   </div>
-  <div class="card">
-    <div class="card-icon"><i class="fa-solid fa-truck"></i></div>
-    <div class="card-text">
-      <span>Embarques na Semana</span>
-      <h2 id="insight-total-embarques">0</h2>
-    </div>
+  <div class="metric-card">
+    <div class="metric-icon-wrap"><i class="fa-solid fa-truck"></i></div>
+    <div class="metric-label">Embarques na Semana</div>
+    <div class="metric-value" id="insight-total-embarques">0</div>
   </div>
-  <div class="card">
-    <div class="card-icon"><i class="fa-solid fa-scale-balanced"></i></div>
-    <div class="card-text">
-      <span>Maior Volume</span>
-      <h2 id="insight-cliente-volume">—</h2>
-    </div>
+  <div class="metric-card">
+    <div class="metric-icon-wrap"><i class="fa-solid fa-scale-balanced"></i></div>
+    <div class="metric-label">Maior Volume</div>
+    <div class="metric-value" id="insight-cliente-volume">—</div>
   </div>
-  <div class="card">
-    <div class="card-icon"><i class="fa-solid fa-ranking-star"></i></div>
-    <div class="card-text">
-      <span>Mais Embarques</span>
-      <h2 id="insight-cliente-embarques">—</h2>
-    </div>
+  <div class="metric-card">
+    <div class="metric-icon-wrap"><i class="fa-solid fa-ranking-star"></i></div>
+    <div class="metric-label">Mais Embarques</div>
+    <div class="metric-value" id="insight-cliente-embarques">—</div>
   </div>
 </section>
 
@@ -554,26 +659,23 @@
       <div id="dia-qui">QUI</div>
       <div id="dia-sex">SEX</div>
     </div>
-
     <div class="agenda-row" id="row-matutino">
       <div class="periodo">☀️ Matutino</div>
       <div class="cell"></div><div class="cell"></div>
       <div class="cell"></div><div class="cell"></div><div class="cell"></div>
     </div>
-
     <div class="agenda-row" id="row-vespertino">
       <div class="periodo">🌤 Vespertino</div>
       <div class="cell"></div><div class="cell"></div>
       <div class="cell"></div><div class="cell"></div><div class="cell"></div>
     </div>
-
     <div class="agenda-row total-row">
       <div class="periodo">📦 Total</div>
-      <div class="cell total-cell" data-dia="seg">0</div>
-      <div class="cell total-cell" data-dia="ter">0</div>
-      <div class="cell total-cell" data-dia="qua">0</div>
-      <div class="cell total-cell" data-dia="qui">0</div>
-      <div class="cell total-cell" data-dia="sex">0</div>
+      <div class="cell total-cell" data-dia="seg">—</div>
+      <div class="cell total-cell" data-dia="ter">—</div>
+      <div class="cell total-cell" data-dia="qua">—</div>
+      <div class="cell total-cell" data-dia="qui">—</div>
+      <div class="cell total-cell" data-dia="sex">—</div>
     </div>
   </div>
 </section>
@@ -664,7 +766,6 @@
   </div>
 </div>
 
-<!-- TOAST -->
 <div id="toast"></div>
 
 <script>
@@ -675,6 +776,7 @@ let semanaAtual        = null;
 let dataBaseSemana     = new Date();
 let embarqueEditandoId = null;
 let firebaseOk         = false;
+let unsubListen        = null;
 
 /* ══════════════════════════════════
    STORE
@@ -682,44 +784,47 @@ let firebaseOk         = false;
 const Store = {
   async get() {
     if (firebaseOk && window.FireStore) {
-      try { return await window.FireStore.get(); } catch(_) {}
+      try { return await window.FireStore.get(); }
+      catch(e) { console.warn("Store.get fallback:", e.message); }
     }
-    try { return JSON.parse(localStorage.getItem('ss-embarques') || '{}'); } catch(_) { return {}; }
+    try { return JSON.parse(localStorage.getItem('ss-embarques') || '{}'); }
+    catch(_) { return {}; }
   },
 
   async set(data) {
-    setSyncing(true);
+    setStatus('syncing');
     if (firebaseOk && window.FireStore) {
-      try { await window.FireStore.set(data); setSyncing(false); return; } catch(_) {}
+      try { await window.FireStore.set(data); setStatus('online'); return; }
+      catch(e) { console.warn("Store.set fallback:", e.message); }
     }
     try { localStorage.setItem('ss-embarques', JSON.stringify(data)); } catch(_) {}
-    setSyncing(false);
+    setStatus('offline');
   },
 
-  listen(cb) {
-    if (firebaseOk && window.FireStore) return window.FireStore.listen(cb);
+  startListen() {
+    if (!firebaseOk || !window.FireStore) return;
+    if (unsubListen) unsubListen();
+    unsubListen = window.FireStore.listen(dados => {
+      if (semanaAtual) renderizarComDados(dados);
+    });
   }
 };
 
 /* ══════════════════════════════════
    UI HELPERS
 ══════════════════════════════════ */
-function setSyncing(v) {
-  const dot = document.getElementById('sync-dot');
-  const lbl = document.getElementById('sync-label');
-  dot.className    = v ? 'sync-dot syncing' : 'sync-dot';
-  lbl.textContent  = v ? 'Salvando…'        : 'Sincronizado ✓';
-}
-
 function setStatus(estado) {
   const dot = document.getElementById('sync-dot');
   const lbl = document.getElementById('sync-label');
-  const map = {
-    online:  ['sync-dot',         'Firebase conectado ✓'],
-    offline: ['sync-dot offline', 'Modo local (sem internet)'],
-    waiting: ['sync-dot syncing', 'Conectando…'],
+  const cfg = {
+    online:  { cls: 'sync-dot online',  txt: 'Firebase conectado ✓' },
+    syncing: { cls: 'sync-dot syncing', txt: 'Salvando…'            },
+    offline: { cls: 'sync-dot offline', txt: 'Modo local'           },
+    waiting: { cls: 'sync-dot syncing', txt: 'Conectando…'          },
   };
-  [dot.className, lbl.textContent] = map[estado] || map.waiting;
+  const s = cfg[estado] || cfg.waiting;
+  dot.className   = s.cls;
+  lbl.textContent = s.txt;
 }
 
 function setLoading(pct) {
@@ -734,7 +839,7 @@ function toast(msg, cor) {
   t.style.background = cor || '#0b2c4d';
   t.style.display = 'block';
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.style.display = 'none', 2800);
+  t._timer = setTimeout(() => t.style.display = 'none', 3000);
 }
 
 /* ══════════════════════════════════
@@ -818,7 +923,8 @@ function voltarSemanaAtual() {
    RENDER
 ══════════════════════════════════ */
 function limparGrid() {
-  document.querySelectorAll('.agenda-row:not(.total-row) .cell').forEach(c => c.innerHTML = '');
+  document.querySelectorAll('.agenda-row:not(.total-row) .cell')
+    .forEach(c => c.innerHTML = '');
 }
 
 function prepararDropZones() {
@@ -847,39 +953,48 @@ function criarCardEmbarque(e, passado) {
   div.className  = `embarque ${e.cliente}`;
   div.dataset.id = e.id;
 
-  if (passado) { div.draggable = false; div.style.opacity = '0.65'; }
-  else {
+  if (passado) {
+    div.draggable = false;
+    div.style.opacity = '0.6';
+    div.style.cursor  = 'default';
+  } else {
     div.draggable = true;
-    div.addEventListener('dragstart', ev => ev.dataTransfer.setData('text/plain', e.id));
+    div.addEventListener('dragstart', ev =>
+      ev.dataTransfer.setData('text/plain', e.id));
   }
+
+  /* Monta as infos em grid 2 colunas */
+  const infos = [
+    { label: 'Sacas',    val: Number(e.sacas).toLocaleString('pt-BR') },
+    { label: 'Emb.',     val: e.embalagem },
+    { label: 'Tipo',     val: e.tipo,     full: !e.ra && !e.peneira },
+  ];
+
+  if (e.ra)      infos.push({ label: 'RA',      val: e.ra      });
+  if (e.peneira) infos.push({ label: 'Peneira', val: e.peneira });
+
+  const infosHTML = infos.map(i => `
+    <div class="info-item${i.full ? ' full' : ''}">
+      <span class="info-label">${i.label}</span>
+      <span class="info-val">${i.val}</span>
+    </div>
+  `).join('');
 
   div.innerHTML = `
     <div class="embarque-cliente">${nomes[e.cliente] || e.cliente.toUpperCase()}</div>
-    <div class="embarque-info">
-      <span><strong>Sacas:</strong> ${Number(e.sacas).toLocaleString('pt-BR')}</span>
-      <span><strong>Embalagem:</strong> ${e.embalagem}</span>
-      <span><strong>Tipo:</strong> ${e.tipo}</span>
-      ${e.ra      ? `<span><strong>RA:</strong> ${e.ra}</span>` : ''}
-      ${e.peneira ? `<span><strong>Peneira:</strong> ${e.peneira}</span>` : ''}
-    </div>
+    <div class="embarque-info">${infosHTML}</div>
     ${!passado ? `
     <div class="embarque-acoes">
-      <button class="btn-edit" onclick="editarEmbarque('${e.id}')">✏️ Editar</button>
-      <button class="btn-del"  onclick="excluirEmbarque('${e.id}')">🗑️</button>
+      <button onclick="editarEmbarque('${e.id}')">✏️ Editar</button>
+      <button class="btn-del" onclick="excluirEmbarque('${e.id}')">🗑️ Excluir</button>
     </div>` : ''}
   `;
 
   return div;
 }
 
-async function renderizarEmbarques() {
-  limparGrid();
-  const dados   = await Store.get();
-  const lista   = dados[semanaAtual] || [];
+function _populaGrid(lista) {
   const passado = semanaEhPassada();
-
-  prepararDropZones();
-
   lista.forEach(e => {
     const colIndex = { seg:1, ter:2, qua:3, qui:4, sex:5 }[e.dia];
     const rowId    = e.periodo === 'Matutino' ? 'row-matutino' : 'row-vespertino';
@@ -889,30 +1004,21 @@ async function renderizarEmbarques() {
     if (!cell) return;
     cell.appendChild(criarCardEmbarque(e, passado));
   });
-
   atualizarTotaisPorDia(lista);
   atualizarInsights(lista);
 }
 
-function renderizarComDados(todosOsDados) {
-  const lista   = todosOsDados[semanaAtual] || [];
-  const passado = semanaEhPassada();
-
+async function renderizarEmbarques() {
   limparGrid();
   prepararDropZones();
+  const dados = await Store.get();
+  _populaGrid(dados[semanaAtual] || []);
+}
 
-  lista.forEach(e => {
-    const colIndex = { seg:1, ter:2, qua:3, qui:4, sex:5 }[e.dia];
-    const rowId    = e.periodo === 'Matutino' ? 'row-matutino' : 'row-vespertino';
-    const row      = document.getElementById(rowId);
-    if (!row) return;
-    const cell = row.children[colIndex];
-    if (!cell) return;
-    cell.appendChild(criarCardEmbarque(e, passado));
-  });
-
-  atualizarTotaisPorDia(lista);
-  atualizarInsights(lista);
+function renderizarComDados(todosOsDados) {
+  limparGrid();
+  prepararDropZones();
+  _populaGrid((todosOsDados || {})[semanaAtual] || []);
 }
 
 /* ══════════════════════════════════
@@ -922,7 +1028,8 @@ function atualizarTotaisPorDia(lista) {
   const t = { seg:0, ter:0, qua:0, qui:0, sex:0 };
   lista.forEach(e => { if (t[e.dia] !== undefined) t[e.dia] += Number(e.sacas); });
   document.querySelectorAll('.total-cell').forEach(c => {
-    c.textContent = t[c.dataset.dia] ? Number(t[c.dataset.dia]).toLocaleString('pt-BR') : '—';
+    const v = t[c.dataset.dia];
+    c.textContent = v ? Number(v).toLocaleString('pt-BR') : '—';
   });
 }
 
@@ -935,8 +1042,8 @@ function atualizarInsights(lista) {
     qtd[e.cliente] = (qtd[e.cliente] || 0) + 1;
   });
   const nomes = { cooxupe:'COOXUPÉ', ofi:'OFI', nkg:'NKG', outros:'OUTROS' };
-  const mvol  = Object.entries(vol).sort((a,b) => b[1]-a[1])[0]?.[0];
-  const mqtd  = Object.entries(qtd).sort((a,b) => b[1]-a[1])[0]?.[0];
+  const mvol  = Object.entries(vol).sort((a,b)=>b[1]-a[1])[0]?.[0];
+  const mqtd  = Object.entries(qtd).sort((a,b)=>b[1]-a[1])[0]?.[0];
 
   document.getElementById('insight-total-sacas').textContent       = totalSacas.toLocaleString('pt-BR');
   document.getElementById('insight-total-embarques').textContent   = lista.length;
@@ -953,7 +1060,8 @@ async function moverEmbarque(id, novoDia, novoPeriodo) {
   for (const s in dados) {
     const idx = dados[s].findIndex(e => e.id === id);
     if (idx !== -1) {
-      dados[s][idx].dia = novoDia; dados[s][idx].periodo = novoPeriodo;
+      dados[s][idx].dia     = novoDia;
+      dados[s][idx].periodo = novoPeriodo;
       encontrado = true; break;
     }
   }
@@ -983,7 +1091,10 @@ async function excluirEmbarque(id) {
 async function editarEmbarque(id) {
   const dados = await Store.get();
   let embarque;
-  for (const s in dados) { embarque = dados[s].find(e => e.id === id); if (embarque) break; }
+  for (const s in dados) {
+    embarque = dados[s].find(e => e.id === id);
+    if (embarque) break;
+  }
   if (!embarque) return;
 
   embarqueEditandoId = id;
@@ -1005,21 +1116,20 @@ async function editarEmbarque(id) {
 ══════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
 
-  /* Condicionais */
   document.getElementById('cliente').addEventListener('change', function() {
-    document.getElementById('campo-ra').style.display = this.value === 'cooxupe' ? 'flex' : 'none';
+    document.getElementById('campo-ra').style.display =
+      this.value === 'cooxupe' ? 'flex' : 'none';
   });
 
   document.getElementById('tipo').addEventListener('change', function() {
-    document.getElementById('campo-peneira').style.display = this.value === 'Peneira' ? 'flex' : 'none';
+    document.getElementById('campo-peneira').style.display =
+      this.value === 'Peneira' ? 'flex' : 'none';
   });
 
-  /* Fechar modal clicando fora */
   document.getElementById('modal-overlay').addEventListener('click', function(e) {
     if (e.target === this) fecharModal();
   });
 
-  /* Submit */
   document.getElementById('form-embarque').addEventListener('submit', async function(e) {
     e.preventDefault();
     if (!document.getElementById('cliente').value) return alert('Selecione o cliente');
@@ -1058,66 +1168,33 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('✅ Embarque salvo com sucesso');
   });
 
-  /* Seletor de data */
   document.getElementById('seletor-data').addEventListener('change', function() {
     if (!this.value) return;
     dataBaseSemana = new Date(this.value + 'T12:00:00');
     carregarSemana(dataBaseSemana);
   });
 
-  /* ── Firebase pronto ── */
-  async function initApp() {
-  setStatus('waiting');
-
-  try {
-    await testarConexao();
-
+  window.addEventListener('firebase-ready', async () => {
     firebaseOk = true;
     setStatus('online');
-
     await carregarSemana(new Date());
+    Store.startListen();
+  });
 
-  } catch (err) {
+  window.addEventListener('firebase-error', async (ev) => {
     firebaseOk = false;
     setStatus('offline');
-    await carregarSemana(new Date());
-  }
-}
-
-initApp();
-
-    async function testarConexao() {
-  if (!window.FireStore) throw new Error("Firebase não inicializado");
-
-  try {
-    await window.FireStore.get();
-    console.log("🔥 Firebase respondeu (getDoc)");
-    return true;
-  } catch (err) {
-    console.error("Erro Firebase:", err);
-    throw err;
-  }
-}
-
-    /* Escuta em tempo real */
-    Store.listen(todosOsDados => {
-      renderizarComDados(todosOsDados);
-    });
-  });
-
-  /* ── Firebase com erro ── */
-  window.addEventListener('firebase-error', async () => {
-    setStatus('offline');
+    console.error("firebase-error:", ev.detail);
+    toast('⚠️ Firebase indisponível — dados locais ativos', '#b45309');
     await carregarSemana(new Date());
   });
 
-  /* ── Timeout aumentado para 10s ── */
-  setTimeout(() => {
-  if (!firebaseOk) {
-    console.warn("Firebase demorou, fallback local");
-    setStatus('offline');
-  }
-}, 10000);
+  setTimeout(async () => {
+    if (!firebaseOk) {
+      setStatus('offline');
+      await carregarSemana(new Date());
+    }
+  }, 15000);
 });
 </script>
 </body>
