@@ -811,6 +811,7 @@
           <option>Liga</option>
           <option>Café Especial</option>
           <option>Resíduo</option>
+          <option>Reaproveitamento</option>
         </select>
       </div>
 
@@ -1207,20 +1208,39 @@ async function editarEmbarque(id) {
 ══════════════════════════════════ */
 async function capturarAgenda() {
   const btn = document.getElementById('btn-captura');
-  const agenda = document.querySelector('.agenda');
   const legenda = document.querySelector('.legenda');
   const semanaLabel = document.getElementById('semana-label').textContent;
 
-  if (!agenda) { toast('❌ Agenda não encontrada'); return; }
-
   btn.classList.add('loading');
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Atualizando dados…';
+
+  // ── 1. Força atualização dos dados antes de capturar ──
+  try {
+    if (firebaseOk && window.FireStore) {
+      const dadosFrescos = await window.FireStore.get();
+      limparGrid();
+      prepararDropZones();
+      _populaGrid((dadosFrescos || {})[semanaAtual] || []);
+    } else {
+      await renderizarEmbarques();
+    }
+  } catch (err) {
+    console.warn('Falha ao atualizar antes da captura, usando dados em tela:', err.message);
+  }
+
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Capturando…';
 
-  // Esconde botões de edição durante o print
+  const agenda = document.querySelector('.agenda');
+  if (!agenda) {
+    toast('❌ Agenda não encontrada');
+    btn.classList.remove('loading');
+    btn.innerHTML = '<i class="fa-solid fa-camera"></i> Copiar Agenda';
+    return;
+  }
+
   document.body.classList.add('capturando');
 
   try {
-    // Monta um wrapper temporário com legenda + agenda para capturar juntos
     const wrapper = document.createElement('div');
     wrapper.style.cssText = `
       position: fixed; left: -9999px; top: 0;
@@ -1229,7 +1249,6 @@ async function capturarAgenda() {
       font-family: 'DM Sans', sans-serif;
     `;
 
-    // Cabeçalho do print
     const header = document.createElement('div');
     header.style.cssText = `
       display: flex; align-items: center; justify-content: space-between;
@@ -1245,7 +1264,6 @@ async function capturarAgenda() {
     `;
     wrapper.appendChild(header);
 
-    // Clona legenda e agenda
     const legendaClone = legenda.cloneNode(true);
     legendaClone.style.marginBottom = '12px';
     legendaClone.querySelectorAll('.embarque-acoes').forEach(el => el.remove());
@@ -1257,6 +1275,9 @@ async function capturarAgenda() {
 
     document.body.appendChild(wrapper);
 
+    // ── 2. Aguarda um frame para o DOM estabilizar após re-render ──
+    await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 120)));
+
     const canvas = await html2canvas(wrapper, {
       scale: 2,
       useCORS: true,
@@ -1266,7 +1287,6 @@ async function capturarAgenda() {
 
     document.body.removeChild(wrapper);
 
-    // Copia para o clipboard
     canvas.toBlob(async (blob) => {
       try {
         await navigator.clipboard.write([
@@ -1274,7 +1294,6 @@ async function capturarAgenda() {
         ]);
         toast('📋 Agenda copiada! Cole no WhatsApp (Ctrl+V)', '#1a6b30');
       } catch (err) {
-        // Fallback: faz download se clipboard não for permitido
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
