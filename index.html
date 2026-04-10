@@ -34,6 +34,8 @@
       const db  = getFirestore(app);
       const REF = doc(db, "embarques", "dados");
 
+      const REF_EMAILS = doc(db, "embarques", "usuarios-email");
+
       window.FireStore = {
         async get() {
           const snap = await getDoc(REF);
@@ -48,6 +50,18 @@
             snap => { if (snap.exists()) cb(snap.data().payload || {}); },
             err  => console.error("onSnapshot:", err.code)
           );
+        },
+        // Retorna lista de e-mails cadastrados para autocomplete
+        async getEmails() {
+          try {
+            const snap = await getDoc(REF_EMAILS);
+            if (!snap.exists()) return [];
+            return snap.data().lista || [];
+          } catch(e) { return []; }
+        },
+        // Salva lista de e-mails (chame após cadastrar novo usuário)
+        async saveEmails(lista) {
+          await setDoc(REF_EMAILS, { lista }, { merge: false });
         }
       };
 
@@ -598,6 +612,29 @@
     .auth-footer {
       margin-top: 20px; font-size: 12px; color: #aab4c0; text-align: center;
     }
+
+    /* ── autocomplete dropdown ── */
+    .auth-field { position: relative; }
+    .auth-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 999;
+      background: #fff; border: 1.5px solid var(--primary);
+      border-radius: 10px; box-shadow: 0 8px 24px rgba(11,44,77,0.15);
+      overflow: hidden; display: none;
+    }
+    .auth-dropdown.open { display: block; }
+    .auth-dropdown-item {
+      padding: 11px 16px; font-size: 14px; font-weight: 500;
+      color: var(--text); cursor: pointer;
+      display: flex; align-items: center; gap: 10px;
+      transition: background 0.12s;
+    }
+    .auth-dropdown-item:hover, .auth-dropdown-item.active {
+      background: #eef4ff; color: var(--primary);
+    }
+    .auth-dropdown-item i { font-size: 13px; color: var(--muted); }
+    .auth-dropdown-empty {
+      padding: 11px 16px; font-size: 13px; color: var(--muted); font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -609,9 +646,12 @@
       </div>
       <div class="auth-title">Embarques Semanais</div>
       <div class="auth-sub">Entre com suas credenciais para continuar</div>
-      <div class="auth-field">
+      <div class="auth-field" id="auth-field-email">
         <label>E-mail</label>
-        <input type="email" id="auth-user" placeholder="seu@email.com" autocomplete="email">
+        <input type="email" id="auth-user" placeholder="seu@email.com.br" autocomplete="off" spellcheck="false">
+        <div class="auth-dropdown" id="auth-dropdown">
+          <!-- preenchido por JS -->
+        </div>
       </div>
       <div class="auth-field">
         <label>Senha</label>
@@ -1797,19 +1837,89 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInp  = document.getElementById('auth-user');
     const passInp  = document.getElementById('auth-pass');
 
+    // ── Autocomplete: carrega e-mails do Firestore ──
+    const dropdown   = document.getElementById('auth-dropdown');
+    let emailsList   = [];   // lista carregada do Firestore
+    let ddIndex      = -1;   // item destacado no dropdown
+
+    async function carregarEmailsFirestore() {
+      try {
+        if (!window.FireStore) return;
+        const snap = await window.FireStore.getEmails();
+        if (snap && Array.isArray(snap)) emailsList = snap;
+      } catch(e) { /* silencioso */ }
+    }
+
+    function renderDropdown(filtro) {
+      const q = filtro.trim().toLowerCase();
+      const matches = q.length === 0
+        ? emailsList
+        : emailsList.filter(e => e.toLowerCase().includes(q));
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div class="auth-dropdown-empty">Nenhum e-mail encontrado</div>';
+        dropdown.classList.toggle('open', q.length > 0);
+        ddIndex = -1;
+        return;
+      }
+
+      dropdown.innerHTML = matches.map((e, i) =>
+        `<div class="auth-dropdown-item" data-email="${e}" data-idx="${i}">
+          <i class="fa-solid fa-envelope"></i>${e}
+        </div>`
+      ).join('');
+
+      dropdown.classList.add('open');
+      ddIndex = -1;
+
+      dropdown.querySelectorAll('.auth-dropdown-item').forEach(item => {
+        item.addEventListener('mousedown', (ev) => {
+          ev.preventDefault();
+          userInp.value = item.dataset.email;
+          fecharDropdown();
+          passInp.focus();
+        });
+      });
+    }
+
+    function fecharDropdown() {
+      dropdown.classList.remove('open');
+      ddIndex = -1;
+    }
+
+    function moverDropdown(dir) {
+      const items = dropdown.querySelectorAll('.auth-dropdown-item');
+      if (!items.length) return;
+      items.forEach(i => i.classList.remove('active'));
+      ddIndex = (ddIndex + dir + items.length) % items.length;
+      items[ddIndex].classList.add('active');
+    }
+
+    userInp.addEventListener('input', () => renderDropdown(userInp.value));
+    userInp.addEventListener('focus', () => { if (emailsList.length) renderDropdown(userInp.value); });
+    userInp.addEventListener('blur',  () => setTimeout(fecharDropdown, 150));
+    userInp.addEventListener('keydown', (e) => {
+      if (!dropdown.classList.contains('open')) return;
+      if (e.key === 'ArrowDown')  { e.preventDefault(); moverDropdown(1); }
+      if (e.key === 'ArrowUp')    { e.preventDefault(); moverDropdown(-1); }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        const active = dropdown.querySelector('.auth-dropdown-item.active');
+        if (active) { e.preventDefault(); userInp.value = active.dataset.email; fecharDropdown(); passInp.focus(); }
+      }
+      if (e.key === 'Escape') fecharDropdown();
+    });
+
     // Escuta mudança de estado do Firebase Auth
     window.addEventListener('auth-state-changed', (ev) => {
       const user = ev.detail;
       if (user) {
-        // Logado — esconde overlay e mostra info do usuário
         overlay.classList.add('hidden');
         const userInfoBox = document.getElementById('auth-user-info');
         if (userInfoBox) userInfoBox.style.display = 'flex';
         if (btnLogout) btnLogout.style.display = 'inline-flex';
         const nameEl = document.getElementById('auth-user-name');
-        if (nameEl) nameEl.textContent = user.email.split('@')[0];
+        if (nameEl) nameEl.textContent = user.email;
       } else {
-        // Não logado — mostra overlay
         overlay.classList.remove('hidden');
         const userInfoBox = document.getElementById('auth-user-info');
         if (userInfoBox) userInfoBox.style.display = 'none';
@@ -1817,7 +1927,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Fallback: se firebase-auth não estiver pronto, usa sessão local
+    // Quando Firebase estiver pronto, carrega lista de e-mails
+    window.addEventListener('firebase-ready', () => carregarEmailsFirestore());
+
+    // Fallback offline
     window.addEventListener('firebase-error', () => {
       if (sessionStorage.getItem(SESSION_KEY) === '1') {
         overlay.classList.add('hidden');
@@ -1825,7 +1938,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function tentarLogin() {
-      const email = userInp.value.trim();
+      const email = userInp.value.trim().toLowerCase();
       const senha = passInp.value;
       if (!email || !senha) {
         mostrarErro('Preencha e-mail e senha.');
@@ -1862,12 +1975,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     btnLogin.addEventListener('click', tentarLogin);
-    [userInp, passInp].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') tentarLogin(); }));
+    passInp.addEventListener('keydown', e => { if (e.key === 'Enter') tentarLogin(); });
 
     // Logout
     if (btnLogout) {
       btnLogout.addEventListener('click', async () => {
         sessionStorage.removeItem(SESSION_KEY);
+        userInp.value = '';
+        passInp.value = '';
+        fecharDropdown();
+        errBox.classList.remove('visible');
         if (window.FirebaseAuth) await window.FirebaseAuth.logout();
       });
     }
