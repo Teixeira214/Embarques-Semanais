@@ -1211,6 +1211,18 @@ function semanaEhPassada() {
   return semanaAtual < getISOWeekKey(new Date());
 }
 
+function mudarSemana(direcao) {
+  const d = new Date(dataBaseSemana);
+  d.setDate(d.getDate() + direcao * 7);
+  dataBaseSemana = d;
+  carregarSemana(dataBaseSemana);
+}
+
+function voltarSemanaAtual() {
+  dataBaseSemana = new Date();
+  carregarSemana(dataBaseSemana);
+}
+
 async function carregarSemana(date) {
   setLoading(40);
   semanaAtual = getISOWeekKey(date);
