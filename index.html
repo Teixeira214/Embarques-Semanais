@@ -534,6 +534,87 @@
     .sabado-badge:hover { background: rgba(255,255,255,0.25); }
     .sabado-badge.ativo { background: #f59e0b; border-color: #f59e0b; }
 
+    /* ── FERIADO BADGE ── */
+    .feriado-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+      color: #fff; border-radius: 8px; padding: 6px 14px;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .feriado-badge:hover { background: rgba(255,255,255,0.25); }
+    .feriado-badge.ativo { background: #ef4444; border-color: #ef4444; }
+
+    /* ── MODAL FERIADOS ── */
+    #modal-feriados-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      display: none; align-items: center; justify-content: center; z-index: 9000;
+    }
+    #modal-feriados-overlay.open { display: flex; }
+    #modal-feriados {
+      background: #fff; border-radius: 18px; padding: 28px 28px 24px;
+      width: 100%; max-width: 440px; box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+    }
+    .modal-feriados-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 17px; font-weight: 800; color: #b91c1c; margin-bottom: 20px;
+    }
+    .feriado-lista { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+    .feriado-item {
+      display: flex; align-items: center; gap: 10px;
+      background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: 10px; padding: 10px 14px;
+    }
+    .feriado-item-data { font-weight: 700; color: #991b1b; font-size: 14px; min-width: 80px; }
+    .feriado-item-nome { flex: 1; font-size: 14px; color: #374151; }
+    .feriado-item-del {
+      background: none; border: none; cursor: pointer; color: #ef4444;
+      font-size: 16px; padding: 2px 6px; border-radius: 6px;
+      transition: background 0.12s;
+    }
+    .feriado-item-del:hover { background: #fee2e2; }
+    .feriado-form-row {
+      display: flex; gap: 8px; align-items: flex-end;
+    }
+    .feriado-form-row input[type="date"],
+    .feriado-form-row input[type="text"] {
+      flex: 1; padding: 10px 12px; border: 1.5px solid var(--border);
+      border-radius: 9px; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; color: var(--text); outline: none;
+      transition: border-color 0.2s;
+    }
+    .feriado-form-row input:focus { border-color: #ef4444; }
+    .btn-add-feriado {
+      background: #ef4444; color: #fff; border: none; border-radius: 9px;
+      padding: 10px 16px; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-add-feriado:hover { opacity: 0.85; }
+    .feriado-vazio { font-size: 13px; color: var(--muted); font-style: italic; text-align: center; padding: 12px 0; }
+    .feriado-modal-footer { display: flex; justify-content: flex-end; margin-top: 12px; }
+
+    /* ── COLUNA FERIADO NA AGENDA ── */
+    .cell.feriado-bloqueado,
+    .audit-cell.feriado-bloqueado {
+      background: repeating-linear-gradient(
+        135deg, #fef2f2, #fef2f2 6px, #fee2e2 6px, #fee2e2 12px
+      );
+      position: relative; pointer-events: none; opacity: 0.85;
+    }
+    .cell.feriado-bloqueado::after,
+    .audit-cell.feriado-bloqueado::after {
+      content: '🚫 Feriado';
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 11px; font-weight: 700; color: #991b1b;
+      white-space: nowrap; background: rgba(255,255,255,0.85);
+      padding: 4px 8px; border-radius: 6px; pointer-events: none;
+    }
+    .agenda-header > div.feriado-header,
+    #audit-header-row > div.feriado-header {
+      color: #ef4444 !important;
+    }
+
     /* ── RESPONSIVO ── */
     @media (max-width: 1200px) { .insights { grid-template-columns: repeat(2, minmax(0, 280px)); } }
     @media (max-width: 700px) {
@@ -701,6 +782,11 @@
     <button class="sabado-badge" id="btn-sabado" onclick="toggleSabado()" title="Adicionar/remover sábado desta semana">
       <i class="fa-solid fa-calendar-plus"></i>
       <span id="sabado-label">+ Sábado</span>
+    </button>
+    <!-- Botão Feriados no header -->
+    <button class="feriado-badge" id="btn-feriados" onclick="abrirModalFeriados()" title="Definir feriados da semana">
+      <i class="fa-solid fa-calendar-xmark"></i>
+      <span id="feriados-label">🚫 Feriados</span>
     </button>
     <!-- Usuário logado + logout -->
     <div id="auth-user-info" style="display:none;align-items:center;gap:10px;background:rgba(255,255,255,0.1);padding:7px 14px;border-radius:20px;">
@@ -1004,6 +1090,29 @@
   </div>
 </div>
 
+<!-- MODAL FERIADOS -->
+<div id="modal-feriados-overlay">
+  <div id="modal-feriados">
+    <div class="modal-feriados-title">
+      <i class="fa-solid fa-calendar-xmark"></i> Feriados da Semana
+    </div>
+    <div class="feriado-lista" id="feriado-lista">
+      <div class="feriado-vazio" id="feriado-vazio">Nenhum feriado cadastrado para esta semana.</div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Adicionar feriado</div>
+    <div class="feriado-form-row">
+      <input type="date" id="feriado-data" placeholder="Data">
+      <input type="text" id="feriado-nome" placeholder="Nome (ex: Tiradentes)">
+      <button class="btn-add-feriado" onclick="adicionarFeriado()">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </div>
+    <div class="feriado-modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModalFeriados()">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -1015,6 +1124,189 @@ let auditEditandoId    = null;
 let firebaseOk         = false;
 let unsubListen        = null;
 let sabadoAtivo        = false;   // sábado desta semana
+let feriadosSemana     = {};      // { 'seg': {data:'...', nome:'...'}, 'ter': {...} }
+
+/* ══ FERIADOS ══ */
+function abrirModalFeriados() {
+  // Preenche a data mínima com a segunda da semana atual
+  const monday = getMonday(dataBaseSemana);
+  const dataInput = document.getElementById('feriado-data');
+  if (dataInput) {
+    const yyyy = monday.getFullYear();
+    const mm   = String(monday.getMonth()+1).padStart(2,'0');
+    const dd   = String(monday.getDate()).padStart(2,'0');
+    dataInput.value = `${yyyy}-${mm}-${dd}`;
+  }
+  document.getElementById('feriado-nome').value = '';
+  renderizarListaFeriados();
+  document.getElementById('modal-feriados-overlay').classList.add('open');
+  atualizarBotaoFeriados();
+}
+
+function fecharModalFeriados() {
+  document.getElementById('modal-feriados-overlay').classList.remove('open');
+  aplicarFeriadosNaAgenda();
+  atualizarBotaoFeriados();
+}
+
+function getChaveDiaDaData(dataStr) {
+  // Recebe '2025-04-19' e retorna 'sab','seg','ter','qua','qui','sex' ou null
+  if (!dataStr) return null;
+  const d     = new Date(dataStr + 'T12:00:00');
+  const diasJs = [null,'seg','ter','qua','qui','sex','sab']; // 0=dom, 1=seg...
+  const dow    = d.getDay(); // 0=dom
+  if (dow === 0) return null; // domingo não faz parte da semana de trabalho
+  return diasJs[dow] || null;
+}
+
+function dataEstaNestasSemana(dataStr) {
+  // Verifica se a data pertence à semana atualmente exibida
+  if (!dataStr) return false;
+  const d      = new Date(dataStr + 'T12:00:00');
+  const monday = getMonday(dataBaseSemana);
+  const friday = new Date(monday); friday.setDate(monday.getDate() + 5); // sábado
+  return d >= monday && d <= friday;
+}
+
+function adicionarFeriado() {
+  const dataVal = document.getElementById('feriado-data').value;
+  const nomeVal = document.getElementById('feriado-nome').value.trim();
+  if (!dataVal)  return alert('Selecione a data do feriado.');
+  if (!nomeVal)  return alert('Digite o nome do feriado.');
+  if (!dataEstaNestasSemana(dataVal)) return alert('A data deve estar dentro da semana exibida (Seg-Sáb).');
+
+  const dia = getChaveDiaDaData(dataVal);
+  if (!dia) return alert('Domingo não é um dia útil. Selecione de Segunda a Sábado.');
+
+  feriadosSemana[dia] = { data: dataVal, nome: nomeVal };
+
+  // Se marcou sábado como feriado e sábado não está ativo, ativa para mostrar na grade
+  if (dia === 'sab' && !sabadoAtivo) {
+    sabadoAtivo = true;
+    atualizarEstadoSabado();
+    atualizarGridSabado();
+  }
+
+  document.getElementById('feriado-data').value = '';
+  document.getElementById('feriado-nome').value = '';
+  renderizarListaFeriados();
+}
+
+function removerFeriado(dia) {
+  delete feriadosSemana[dia];
+  renderizarListaFeriados();
+}
+
+function renderizarListaFeriados() {
+  const lista = document.getElementById('feriado-lista');
+  const vazio = document.getElementById('feriado-vazio');
+  const dias  = Object.keys(feriadosSemana);
+  const nomesDias = { seg:'Segunda', ter:'Terça', qua:'Quarta', qui:'Quinta', sex:'Sexta', sab:'Sábado' };
+
+  // Remove itens antigos (exceto o vazio)
+  lista.querySelectorAll('.feriado-item').forEach(el => el.remove());
+
+  if (dias.length === 0) {
+    vazio.style.display = 'block';
+    return;
+  }
+  vazio.style.display = 'none';
+
+  dias.forEach(dia => {
+    const f   = feriadosSemana[dia];
+    const div = document.createElement('div');
+    div.className = 'feriado-item';
+    const dataFormatada = new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+    div.innerHTML = `
+      <span class="feriado-item-data">${nomesDias[dia]}<br><small>${dataFormatada}</small></span>
+      <span class="feriado-item-nome">${f.nome}</span>
+      <button class="feriado-item-del" onclick="removerFeriado('${dia}')" title="Remover feriado">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    `;
+    lista.appendChild(div);
+  });
+}
+
+function aplicarFeriadosNaAgenda() {
+  const diasTodos = ['seg','ter','qua','qui','sex','sab'];
+  const periodosRows = ['row-matutino','row-vespertino'];
+  const auditRows    = ['audit-row-matutino','audit-row-vespertino'];
+  const diasIdx      = { seg:0, ter:1, qua:2, qui:3, sex:4, sab:5 };
+
+  // Headers
+  diasTodos.forEach(dia => {
+    const headEl    = document.getElementById(`dia-${dia}`);
+    const audHeadEl = document.getElementById(`aud-dia-${dia}`);
+    const ehFeriado = !!feriadosSemana[dia];
+    if (headEl)    headEl.classList.toggle('feriado-header', ehFeriado);
+    if (audHeadEl) audHeadEl.classList.toggle('feriado-header', ehFeriado);
+  });
+
+  // Células da agenda
+  periodosRows.forEach(rowId => {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const cells = [...row.children].filter(c => c.classList.contains('cell'));
+    diasTodos.forEach(dia => {
+      const idx  = diasIdx[dia];
+      const cell = cells[idx];
+      if (!cell) return;
+      const ehFeriado = !!feriadosSemana[dia];
+      cell.classList.toggle('feriado-bloqueado', ehFeriado);
+    });
+  });
+
+  // Células de auditoria
+  auditRows.forEach(rowId => {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const cells = [...row.children].filter(c => c.classList.contains('audit-cell'));
+    diasTodos.forEach(dia => {
+      const idx  = diasIdx[dia];
+      const cell = cells[idx];
+      if (!cell) return;
+      const ehFeriado = !!feriadosSemana[dia];
+      cell.classList.toggle('feriado-bloqueado', ehFeriado);
+    });
+  });
+
+  // Bloqueia/desbloqueia as opções nos selects dos formulários
+  atualizarSelectsDiaComFeriados();
+}
+
+function atualizarSelectsDiaComFeriados() {
+  const selects = [
+    document.getElementById('select-dia'),
+    document.getElementById('select-audit-dia')
+  ];
+  selects.forEach(sel => {
+    if (!sel) return;
+    [...sel.options].forEach(opt => {
+      const dia = opt.value;
+      if (feriadosSemana[dia]) {
+        opt.disabled = true;
+        opt.text = opt.text.replace(/ 🚫.*$/, '') + ' 🚫 ' + feriadosSemana[dia].nome;
+      } else {
+        opt.disabled = false;
+        opt.text = opt.text.replace(/ 🚫.*$/, '');
+      }
+    });
+  });
+}
+
+function atualizarBotaoFeriados() {
+  const btn = document.getElementById('btn-feriados');
+  if (!btn) return;
+  const temFeriados = Object.keys(feriadosSemana).length > 0;
+  btn.classList.toggle('ativo', temFeriados);
+}
+
+function limparFeriadosDaSemana() {
+  feriadosSemana = {};
+  aplicarFeriadosNaAgenda();
+  atualizarBotaoFeriados();
+}
 
 /* ══ STORE ══ */
 const Store = {
@@ -1287,6 +1579,8 @@ async function carregarSemana(date) {
 
   sabadoAtivo = false;
   atualizarEstadoSabado();
+  feriadosSemana = {};
+  atualizarBotaoFeriados();
   // Remove sábado ao trocar semana
   ['agenda-header','row-matutino','row-vespertino','row-total','audit-header-row','audit-row-matutino','audit-row-vespertino'].forEach(id => {
     const row = document.getElementById(id);
@@ -1441,6 +1735,7 @@ async function renderizarEmbarques() {
   const lista = dados[semanaAtual] || [];
   const auds  = (dados['auditorias-' + semanaAtual]) || [];
   _populaGrid(lista, auds);
+  aplicarFeriadosNaAgenda();
 }
 
 function renderizarComDados(todosOsDados) {
@@ -1449,6 +1744,7 @@ function renderizarComDados(todosOsDados) {
   const lista = (todosOsDados || {})[semanaAtual] || [];
   const auds  = (todosOsDados || {})['auditorias-' + semanaAtual] || [];
   _populaGrid(lista, auds);
+  aplicarFeriadosNaAgenda();
 }
 
 /* ══ TOTAIS & INSIGHTS ══ */
@@ -1722,6 +2018,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('modal-audit-overlay').addEventListener('click', function(e) {
     if (e.target === this) fecharModalAuditoria();
+  });
+  document.getElementById('modal-feriados-overlay').addEventListener('click', function(e) {
+    if (e.target === this) fecharModalFeriados();
   });
 
   /* Submit embarque */
