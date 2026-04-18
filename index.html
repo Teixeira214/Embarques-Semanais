@@ -219,40 +219,43 @@
     /* ── INSIGHTS ── */
     .insights {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 280px));
+      grid-template-columns: repeat(6, minmax(0, 230px));
       justify-content: center;
-      gap: 16px; padding: 28px 40px 0;
+      gap: 12px; padding: 20px 40px 0;
     }
     .metric-card {
-      background: var(--surface); border-radius: 16px;
+      background: var(--surface); border-radius: 14px;
       border: 1px solid var(--border); box-shadow: var(--shadow);
-      padding: 24px 20px 20px;
-      display: flex; flex-direction: column; align-items: center;
-      gap: 12px; text-align: center;
+      padding: 18px 18px 16px;
+      display: flex; flex-direction: row; align-items: center;
+      gap: 14px; text-align: left;
       transition: transform 0.18s, box-shadow 0.18s; min-width: 0;
     }
-    .metric-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+    .metric-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
     .metric-icon-wrap {
-      width: 60px; height: 60px; border-radius: 16px;
+      width: 50px; height: 50px; border-radius: 13px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 24px; flex-shrink: 0;
+      font-size: 20px; flex-shrink: 0;
     }
     .metric-card:nth-child(1) .metric-icon-wrap { background: #deeeff; color: #1565c0; }
     .metric-card:nth-child(2) .metric-icon-wrap { background: #d8f0e2; color: #1b6b32; }
     .metric-card:nth-child(3) .metric-icon-wrap { background: #f3e0fa; color: #6a1b9a; }
     .metric-card:nth-child(4) .metric-icon-wrap { background: #fdefd4; color: #b56d00; }
-    .metric-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); }
+    .metric-card:nth-child(5) .metric-icon-wrap { background: #d4eef5; color: #1a6b8a; }
+    .metric-card:nth-child(6) .metric-icon-wrap { background: #fce4ec; color: #c2185b; }
+    .metric-texts { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+    .metric-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); }
     .metric-value {
-      font-size: 28px; font-weight: 700; color: var(--text); line-height: 1.1;
+      font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.1;
       max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .metric-value[data-tipo="texto"] {
-      font-size: 19px; font-weight: 700;
+      font-size: 15px; font-weight: 700;
       white-space: normal; word-break: break-word; line-height: 1.3;
     }
     .metric-sub {
-      font-size: 12px; color: var(--muted); font-weight: 500;
-      margin-top: -6px; max-width: 100%; text-align: center;
+      font-size: 11px; color: var(--muted); font-weight: 500;
+      margin-top: 1px; max-width: 100%;
     }
 
     /* ── TOOLBAR ── */
@@ -347,8 +350,10 @@
 
     .total-row .periodo { background: #e2e9f4; font-size: 11px; }
     .total-row .cell {
-      background: #e2e9f4; font-size: 20px; font-weight: 800; color: var(--primary);
-      display: flex; align-items: center; justify-content: center; min-height: 54px;
+      background: linear-gradient(135deg, #deeeff 0%, #e2e9f4 100%);
+      font-size: 18px; font-weight: 800; color: var(--primary);
+      display: flex; align-items: center; justify-content: center; min-height: 42px;
+      border-bottom: 2px solid var(--border);
     }
 
     /* ── AGENDA DE AUDITORIA ── */
@@ -508,6 +513,14 @@
     .embarque-movido { animation: destaque 1s ease; }
     @keyframes destaque { 0%{box-shadow:0 0 0 0 rgba(255,255,255,0)} 40%{box-shadow:0 0 0 6px rgba(255,255,255,0.6)} 100%{box-shadow:0 0 0 0 rgba(255,255,255,0)} }
 
+    /* ── SEMANA PASSADA LOCK ── */
+    .semana-passada-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fef2f2; border: 1px solid #fecaca;
+      color: #b91c1c; border-radius: 8px; padding: 5px 12px;
+      font-size: 12px; font-weight: 700;
+    }
+
     /* ── CAPTURA ── */
     .btn-capture {
       background: #0f7d50; color: #fff; font-size: 14px; padding: 11px 20px;
@@ -621,15 +634,15 @@
     }
 
     /* ── RESPONSIVO ── */
-    @media (max-width: 1200px) { .insights { grid-template-columns: repeat(2, minmax(0, 280px)); } }
+    @media (max-width: 1400px) { .insights { grid-template-columns: repeat(3, minmax(0, 230px)); } }
     @media (max-width: 700px) {
       .header { padding: 0 18px; height: 70px; }
       .header h1 { font-size: 20px; }
-      .insights { grid-template-columns: repeat(2, 1fr); padding: 16px 18px 0; }
+      .insights { grid-template-columns: repeat(2, 1fr); padding: 14px 18px 0; }
       .toolbar, .legenda, .agenda, .audit-section { padding-left: 18px; padding-right: 18px; }
       .agenda-header, .agenda-row { grid-template-columns: 75px repeat(5,1fr); }
       .agenda-header.com-sabado, .agenda-row.com-sabado { grid-template-columns: 75px repeat(6,1fr); }
-      .metric-value { font-size: 26px; }
+      .metric-value { font-size: 22px; }
     }
 
     /* ── AUTH OVERLAY ── */
@@ -812,24 +825,48 @@
 <section class="insights">
   <div class="metric-card">
     <div class="metric-icon-wrap"><i class="fa-solid fa-boxes-stacked"></i></div>
-    <div class="metric-label">Total de Sacas</div>
-    <div class="metric-value" id="insight-total-sacas" data-tipo="numero" style="font-size:34px;font-weight:800;">0</div>
+    <div class="metric-texts">
+      <div class="metric-label">Total de Sacas</div>
+      <div class="metric-value" id="insight-total-sacas" data-tipo="numero">0</div>
+    </div>
   </div>
   <div class="metric-card">
     <div class="metric-icon-wrap"><i class="fa-solid fa-truck"></i></div>
-    <div class="metric-label">Embarques na Semana</div>
-    <div class="metric-value" id="insight-total-embarques" data-tipo="numero" style="font-size:34px;font-weight:800;">0</div>
+    <div class="metric-texts">
+      <div class="metric-label">Embarques na Semana</div>
+      <div class="metric-value" id="insight-total-embarques" data-tipo="numero">0</div>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-icon-wrap"><i class="fa-solid fa-calendar-check"></i></div>
+    <div class="metric-texts">
+      <div class="metric-label">Embarques Hoje</div>
+      <div class="metric-value" id="insight-embarques-hoje" data-tipo="numero">0</div>
+      <div class="metric-sub" id="insight-embarques-hoje-sub"></div>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-icon-wrap"><i class="fa-solid fa-calendar-day"></i></div>
+    <div class="metric-texts">
+      <div class="metric-label">Média por Dia</div>
+      <div class="metric-value" id="insight-media-dia" data-tipo="numero">0</div>
+      <div class="metric-sub" id="insight-media-dia-sub"></div>
+    </div>
   </div>
   <div class="metric-card">
     <div class="metric-icon-wrap"><i class="fa-solid fa-scale-balanced"></i></div>
-    <div class="metric-label">Maior Volume</div>
-    <div class="metric-value" id="insight-cliente-volume" data-tipo="texto">—</div>
-    <div class="metric-sub" id="insight-cliente-volume-sub" style="display:none;"></div>
+    <div class="metric-texts">
+      <div class="metric-label">Maior Volume</div>
+      <div class="metric-value" id="insight-cliente-volume" data-tipo="texto">—</div>
+      <div class="metric-sub" id="insight-cliente-volume-sub" style="display:none;"></div>
+    </div>
   </div>
   <div class="metric-card">
     <div class="metric-icon-wrap"><i class="fa-solid fa-ranking-star"></i></div>
-    <div class="metric-label">Mais Embarques</div>
-    <div class="metric-value" id="insight-cliente-embarques" data-tipo="texto">—</div>
+    <div class="metric-texts">
+      <div class="metric-label">Mais Embarques</div>
+      <div class="metric-value" id="insight-cliente-embarques" data-tipo="texto">—</div>
+    </div>
   </div>
 </section>
 
@@ -850,15 +887,18 @@
       <i class="fa-solid fa-house"></i> Semana Atual
     </button>
     <input type="date" id="seletor-data" class="seletor-data" title="Ir para semana específica">
+    <span id="semana-passada-badge" class="semana-passada-badge" style="display:none;">
+      <i class="fa-solid fa-lock"></i> Semana encerrada – somente leitura
+    </span>
   </div>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-    <button class="btn btn-audit" onclick="abrirModalAuditoria()">
+    <button class="btn btn-audit" id="btn-nova-auditoria" onclick="abrirModalAuditoria()">
       <i class="fa-solid fa-clipboard-check"></i> Nova Auditoria
     </button>
     <button class="btn-capture" id="btn-captura" onclick="capturarAgenda()">
       <i class="fa-solid fa-camera"></i> Copiar Agenda
     </button>
-    <button class="btn btn-success" onclick="abrirModal()">
+    <button class="btn btn-success" id="btn-novo-embarque" onclick="abrirModal()">
       <i class="fa-solid fa-plus"></i> Novo Embarque
     </button>
   </div>
@@ -916,6 +956,14 @@
       <div id="dia-qui">QUI</div>
       <div id="dia-sex">SEX</div>
     </div>
+    <div class="agenda-row total-row" id="row-total">
+      <div class="periodo">📦 Total</div>
+      <div class="cell total-cell" data-dia="seg">—</div>
+      <div class="cell total-cell" data-dia="ter">—</div>
+      <div class="cell total-cell" data-dia="qua">—</div>
+      <div class="cell total-cell" data-dia="qui">—</div>
+      <div class="cell total-cell" data-dia="sex">—</div>
+    </div>
     <div class="agenda-row" id="row-matutino">
       <div class="periodo">☀️ Matutino</div>
       <div class="cell"></div><div class="cell"></div>
@@ -925,14 +973,6 @@
       <div class="periodo">🌤 Vespertino</div>
       <div class="cell"></div><div class="cell"></div>
       <div class="cell"></div><div class="cell"></div><div class="cell"></div>
-    </div>
-    <div class="agenda-row total-row" id="row-total">
-      <div class="periodo">📦 Total</div>
-      <div class="cell total-cell" data-dia="seg">—</div>
-      <div class="cell total-cell" data-dia="ter">—</div>
-      <div class="cell total-cell" data-dia="qua">—</div>
-      <div class="cell total-cell" data-dia="qui">—</div>
-      <div class="cell total-cell" data-dia="sex">—</div>
     </div>
   </div>
 </section>
@@ -1324,12 +1364,16 @@ function atualizarSelectsDiaComFeriados() {
     if (!sel) return;
     [...sel.options].forEach(opt => {
       const dia = opt.value;
+      // Remove sufixos anteriores
+      opt.text = opt.text.replace(/ 🚫.*$/, '').replace(/ 🔒.*$/, '');
       if (feriadosSemana[dia]) {
         opt.disabled = true;
-        opt.text = opt.text.replace(/ 🚫.*$/, '') + ' 🚫 ' + feriadosSemana[dia].nome;
+        opt.text += ' 🚫 ' + feriadosSemana[dia].nome;
+      } else if (diaTravado(dia)) {
+        opt.disabled = true;
+        opt.text += ' 🔒';
       } else {
         opt.disabled = false;
-        opt.text = opt.text.replace(/ 🚫.*$/, '');
       }
     });
   });
@@ -1543,6 +1587,7 @@ function atualizarGridSabado() {
 
 /* ══ MODAL EMBARQUE ══ */
 function abrirModal(titulo) {
+  if (semanaEhPassada() && !titulo) return; // bloqueia novo em semana passada
   document.getElementById('modal-title-text').textContent = titulo || 'Novo Embarque';
   document.getElementById('modal-overlay').style.display = 'flex';
 }
@@ -1556,6 +1601,7 @@ function fecharModal() {
 
 /* ══ MODAL AUDITORIA ══ */
 function abrirModalAuditoria(titulo) {
+  if (semanaEhPassada() && !titulo) return; // bloqueia novo em semana passada
   document.getElementById('modal-audit-title-text').textContent = titulo || 'Nova Auditoria';
   document.getElementById('modal-audit-overlay').style.display = 'flex';
 }
@@ -1587,6 +1633,26 @@ function getISOWeekKey(date) {
 }
 function semanaEhPassada() {
   return semanaAtual < getISOWeekKey(new Date());
+}
+
+// Retorna true se a data do embarque tem mais de 2 dias atrás (inclusive semanas passadas)
+function diaTravado(diaChave) {
+  // Se semana passada, tudo travado
+  if (semanaAtual < getISOWeekKey(new Date())) return true;
+  // Se semana futura, nada travado
+  if (semanaAtual > getISOWeekKey(new Date())) return false;
+  // Semana atual: verifica quantos dias atrás é o dia do embarque
+  const monday = getMonday(new Date());
+  const diasOffset = { seg:0, ter:1, qua:2, qui:3, sex:4, sab:5 };
+  const offset = diasOffset[diaChave];
+  if (offset === undefined) return false;
+  const dataEmbarque = new Date(monday);
+  dataEmbarque.setDate(monday.getDate() + offset);
+  dataEmbarque.setHours(0, 0, 0, 0);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const diffDias = Math.floor((hoje - dataEmbarque) / 86400000);
+  return diffDias > 2;
 }
 
 function mudarSemana(direcao) {
@@ -1635,6 +1701,16 @@ async function carregarSemana(date) {
   await renderizarEmbarques();
   await carregarFeriadosDoStore();
   aplicarFeriadosNaAgenda();
+  atualizarSelectsDiaComFeriados();
+
+  // Travar interface para semanas passadas
+  const passado = semanaEhPassada();
+  document.getElementById('btn-novo-embarque').style.display  = passado ? 'none' : '';
+  document.getElementById('btn-nova-auditoria').style.display = passado ? 'none' : '';
+  document.getElementById('btn-sabado').style.display         = passado ? 'none' : '';
+  document.getElementById('btn-feriados').style.display       = passado ? 'none' : '';
+  document.getElementById('semana-passada-badge').style.display = passado ? '' : 'none';
+
   setLoading(100);
 }
 
@@ -1655,6 +1731,8 @@ function prepararDropZones() {
       if (ci === 0 || !cell.classList.contains('cell')) return;
       const dias = ['seg','ter','qua','qui','sex','sab'];
       const dia  = dias[ci - 1];
+      // Não configura drop em células de dias travados
+      if (diaTravado(dia)) return;
       cell.ondragover  = e => { e.preventDefault(); cell.classList.add('drag-over'); };
       cell.ondragleave = () => cell.classList.remove('drag-over');
       cell.ondrop      = e => {
@@ -1733,7 +1811,7 @@ function criarCardAuditoria(a, passado) {
 }
 
 function _populaGrid(lista, auditorias) {
-  const passado = semanaEhPassada();
+  const semPassada = semanaEhPassada();
   const diasIdx = { seg:1, ter:2, qua:3, qui:4, sex:5, sab:6 };
 
   lista.forEach(e => {
@@ -1745,7 +1823,9 @@ function _populaGrid(lista, auditorias) {
     const cells = [...row.children].filter(c => c.classList.contains('cell'));
     const cell  = cells[colIndex - 1];
     if (!cell) return;
-    cell.appendChild(criarCardEmbarque(e, passado));
+    // Trava embarques de semana passada OU de mais de 2 dias atrás
+    const travado = semPassada || diaTravado(e.dia);
+    cell.appendChild(criarCardEmbarque(e, travado));
   });
 
   atualizarTotaisPorDia(lista);
@@ -1764,7 +1844,8 @@ function _populaGrid(lista, auditorias) {
     const cells = [...row.children].filter(c => c.classList.contains('audit-cell'));
     const cell  = cells[colIndex - 1];
     if (!cell) return;
-    cell.appendChild(criarCardAuditoria(a, passado));
+    const travado = semPassada || diaTravado(a.dia);
+    cell.appendChild(criarCardAuditoria(a, travado));
   });
 
   document.getElementById('audit-section').style.display = temAuditoria ? 'block' : 'none';
@@ -1802,11 +1883,13 @@ function atualizarTotaisPorDia(lista) {
 
 function atualizarInsights(lista) {
   let totalSacas = 0;
-  const vol = {}, qtd = {}, outrosSubs = {};
+  const vol = {}, qtd = {}, outrosSubs = {}, sacasPorDia = {}, qtdPorDia = {};
   lista.forEach(e => {
     totalSacas += Number(e.sacas);
     vol[e.cliente] = (vol[e.cliente] || 0) + Number(e.sacas);
     qtd[e.cliente] = (qtd[e.cliente] || 0) + 1;
+    sacasPorDia[e.dia] = (sacasPorDia[e.dia] || 0) + Number(e.sacas);
+    qtdPorDia[e.dia]   = (qtdPorDia[e.dia]   || 0) + 1;
     if (e.cliente === 'outros' && e.outrosNome) {
       outrosSubs[e.outrosNome] = (outrosSubs[e.outrosNome] || 0) + Number(e.sacas);
     }
@@ -1817,9 +1900,55 @@ function atualizarInsights(lista) {
   const mvol = Object.entries(vol).sort((a,b) => b[1]-a[1])[0]?.[0];
   const mqtd = Object.entries(qtd).sort((a,b) => b[1]-a[1])[0]?.[0];
 
+  // Média de sacas por dia (dias com embarque)
+  const diasComEmbarque = Object.keys(sacasPorDia).length;
+  const mediaDia = diasComEmbarque > 0 ? Math.round(totalSacas / diasComEmbarque) : 0;
+  const melhorDia = Object.entries(sacasPorDia).sort((a,b) => b[1]-a[1])[0];
+  const nomeDias = { seg:'Seg', ter:'Ter', qua:'Qua', qui:'Qui', sex:'Sex', sab:'Sáb' };
+
+  // Embarques hoje — identifica o dia da semana atual
+  const diasChave = ['dom','seg','ter','qua','qui','sex','sab'];
+  const diaHojeChave = diasChave[new Date().getDay()];
+  const embarquesHoje = qtdPorDia[diaHojeChave] || 0;
+  const sacasHoje     = sacasPorDia[diaHojeChave] || 0;
+
   document.getElementById('insight-total-sacas').textContent       = totalSacas.toLocaleString('pt-BR');
   document.getElementById('insight-total-embarques').textContent   = lista.length;
   document.getElementById('insight-cliente-embarques').textContent = mqtd ? nomes[mqtd] : '—';
+
+  const mediaEl    = document.getElementById('insight-media-dia');
+  const mediaSubEl = document.getElementById('insight-media-dia-sub');
+  mediaEl.textContent = mediaDia > 0 ? mediaDia.toLocaleString('pt-BR') : '—';
+  if (melhorDia) {
+    mediaSubEl.textContent = '↑ ' + (nomeDias[melhorDia[0]] || melhorDia[0]) + ': ' + Number(melhorDia[1]).toLocaleString('pt-BR');
+    mediaSubEl.style.display = 'block';
+  } else {
+    mediaSubEl.style.display = 'none';
+  }
+
+  // KPI Embarques Hoje
+  const hojeEl    = document.getElementById('insight-embarques-hoje');
+  const hojeSubEl = document.getElementById('insight-embarques-hoje-sub');
+  // Só exibe o KPI de hoje se estiver na semana atual
+  const semanaCorrente = getISOWeekKey(new Date());
+  if (semanaAtual === semanaCorrente) {
+    hojeEl.textContent = embarquesHoje > 0 ? embarquesHoje : '0';
+    if (sacasHoje > 0) {
+      hojeSubEl.textContent = sacasHoje.toLocaleString('pt-BR') + ' sacas';
+      hojeSubEl.style.display = 'block';
+    } else {
+      hojeSubEl.textContent = 'Nenhum agendado';
+      hojeSubEl.style.display = 'block';
+    }
+  } else {
+    // Semana diferente: mostra o total do dia com mais embarques
+    const melhorDiaQtd = Object.entries(qtdPorDia).sort((a,b) => b[1]-a[1])[0];
+    hojeEl.textContent = melhorDiaQtd ? melhorDiaQtd[1] : '—';
+    hojeSubEl.textContent = melhorDiaQtd
+      ? '↑ ' + (nomeDias[melhorDiaQtd[0]] || melhorDiaQtd[0]) + ' (pico)'
+      : '';
+    hojeSubEl.style.display = melhorDiaQtd ? 'block' : 'none';
+  }
 
   const volEl  = document.getElementById('insight-cliente-volume');
   const subEl  = document.getElementById('insight-cliente-volume-sub');
