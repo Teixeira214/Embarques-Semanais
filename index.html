@@ -513,6 +513,33 @@
     .embarque-movido { animation: destaque 1s ease; }
     @keyframes destaque { 0%{box-shadow:0 0 0 0 rgba(255,255,255,0)} 40%{box-shadow:0 0 0 6px rgba(255,255,255,0.6)} 100%{box-shadow:0 0 0 0 rgba(255,255,255,0)} }
 
+    /* ── CONTEXT MENU ── */
+    #ctx-menu {
+      position: fixed; z-index: 99998;
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+      border: 1px solid var(--border);
+      padding: 6px; min-width: 180px;
+      display: none; animation: ctxFade 0.12s ease;
+    }
+    #ctx-menu.open { display: block; }
+    @keyframes ctxFade { from { opacity:0; transform:scale(0.94) translateY(-4px); } to { opacity:1; transform:scale(1) translateY(0); } }
+    .ctx-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; border-radius: 8px; cursor: pointer;
+      font-size: 13.5px; font-weight: 500; color: var(--text);
+      transition: background 0.1s;
+    }
+    .ctx-item:hover { background: #f0f5ff; color: var(--primary); }
+    .ctx-item .ctx-icon { font-size: 15px; width: 18px; text-align: center; }
+    .ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
+    .ctx-item.danger:hover { background: #fef2f2; color: #b91c1c; }
+
+    /* ── DRAG DUPLICATE HINT ── */
+    .drag-over-copy { outline: 2.5px dashed #4dabf7 !important; background: rgba(77,171,247,0.08) !important; }
+    .embarque-duplicado { animation: destaqueCopy 1s ease; }
+    @keyframes destaqueCopy { 0%{box-shadow:0 0 0 0 rgba(77,171,247,0)} 40%{box-shadow:0 0 0 6px rgba(77,171,247,0.7)} 100%{box-shadow:0 0 0 0 rgba(77,171,247,0)} }
+
     /* ── SEMANA PASSADA LOCK ── */
     .semana-passada-badge {
       display: inline-flex; align-items: center; gap: 6px;
@@ -1158,6 +1185,20 @@
   </div>
 </div>
 
+<!-- CONTEXT MENU -->
+<div id="ctx-menu">
+  <div class="ctx-item" id="ctx-duplicar" onclick="ctxDuplicar()">
+    <span class="ctx-icon">📋</span> Duplicar embarque
+  </div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" id="ctx-editar" onclick="ctxEditar()">
+    <span class="ctx-icon">✏️</span> Editar
+  </div>
+  <div class="ctx-item danger" id="ctx-excluir" onclick="ctxExcluir()">
+    <span class="ctx-icon">🗑️</span> Excluir
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -1170,6 +1211,8 @@ let firebaseOk         = false;
 let unsubListen        = null;
 let sabadoAtivo        = false;   // sábado desta semana
 let feriadosSemana     = {};      // { 'seg': {data:'...', nome:'...'}, 'ter': {...} }
+let ctxEmbarqueId      = null;    // id do embarque com menu de contexto aberto
+let ctrlDragAtivo      = false;   // ctrl pressionado durante drag
 
 /* ══ FERIADOS ══ */
 function abrirModalFeriados() {
@@ -1733,11 +1776,29 @@ function prepararDropZones() {
       const dia  = dias[ci - 1];
       // Não configura drop em células de dias travados
       if (diaTravado(dia)) return;
-      cell.ondragover  = e => { e.preventDefault(); cell.classList.add('drag-over'); };
-      cell.ondragleave = () => cell.classList.remove('drag-over');
+      cell.ondragover  = e => {
+        e.preventDefault();
+        if (ctrlDragAtivo) {
+          e.dataTransfer.dropEffect = 'copy';
+          cell.classList.add('drag-over-copy');
+          cell.classList.remove('drag-over');
+        } else {
+          cell.classList.add('drag-over');
+          cell.classList.remove('drag-over-copy');
+        }
+      };
+      cell.ondragleave = () => { cell.classList.remove('drag-over'); cell.classList.remove('drag-over-copy'); };
       cell.ondrop      = e => {
-        e.preventDefault(); cell.classList.remove('drag-over');
-        moverEmbarque(e.dataTransfer.getData('text/plain'), dia, periodo);
+        e.preventDefault();
+        cell.classList.remove('drag-over');
+        cell.classList.remove('drag-over-copy');
+        const id = e.dataTransfer.getData('text/plain');
+        if (ctrlDragAtivo || e.ctrlKey || e.metaKey) {
+          duplicarEmbarque(id, dia, periodo);
+        } else {
+          moverEmbarque(id, dia, periodo);
+        }
+        ctrlDragAtivo = false;
       };
     });
   });
@@ -1758,7 +1819,22 @@ function criarCardEmbarque(e, passado) {
   if (passado) { div.draggable = false; div.style.opacity = '0.6'; div.style.cursor = 'default'; }
   else {
     div.draggable = true;
-    div.addEventListener('dragstart', ev => ev.dataTransfer.setData('text/plain', e.id));
+    div.addEventListener('dragstart', ev => {
+      ev.dataTransfer.setData('text/plain', e.id);
+      // Sinaliza se Ctrl está pressionado (duplicar)
+      ctrlDragAtivo = ev.ctrlKey || ev.metaKey;
+      if (ctrlDragAtivo) {
+        ev.dataTransfer.effectAllowed = 'copy';
+        // Hint visual no card sendo arrastado
+        setTimeout(() => div.style.opacity = '0.5', 0);
+      }
+    });
+    div.addEventListener('dragend', () => {
+      div.style.opacity = '';
+      ctrlDragAtivo = false;
+    });
+    // Botão direito → menu de contexto
+    div.addEventListener('contextmenu', ev => abrirCtxMenu(ev, e.id));
   }
 
   let clienteLabel = nomes[e.cliente] || e.cliente.toUpperCase();
@@ -1983,6 +2059,75 @@ async function moverEmbarque(id, novoDia, novoPeriodo) {
   }
 }
 
+/* ══ DUPLICAR EMBARQUE ══ */
+async function duplicarEmbarque(id, novoDia, novoPeriodo) {
+  const dados = await Store.get();
+  let original = null;
+  for (const s in dados) {
+    if (!Array.isArray(dados[s])) continue;
+    original = dados[s].find(e => e.id === id);
+    if (original) break;
+  }
+  if (!original) return;
+
+  const copia = Object.assign({}, original, {
+    id:        crypto.randomUUID(),
+    semana:    semanaAtual,
+    dia:       novoDia       || original.dia,
+    periodo:   novoPeriodo   || original.periodo,
+    updatedAt: new Date().toISOString()
+  });
+
+  dados[semanaAtual] = dados[semanaAtual] || [];
+  dados[semanaAtual].push(copia);
+  await Store.set(dados);
+  await renderizarEmbarques();
+  toast('📋 Embarque duplicado!', '#1a6b30');
+  setTimeout(() => {
+    const el = document.querySelector(`[data-id="${copia.id}"]`);
+    if (el) el.classList.add('embarque-duplicado');
+  }, 60);
+}
+
+/* ══ CONTEXT MENU ══ */
+function abrirCtxMenu(e, embarqueId) {
+  e.preventDefault();
+  e.stopPropagation();
+  ctxEmbarqueId = embarqueId;
+  const menu = document.getElementById('ctx-menu');
+  menu.classList.add('open');
+  // Posiciona o menu próximo ao cursor, evitando sair da tela
+  const mw = 190, mh = 120;
+  let x = e.clientX, y = e.clientY;
+  if (x + mw > window.innerWidth)  x = window.innerWidth  - mw - 8;
+  if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+}
+
+function fecharCtxMenu() {
+  document.getElementById('ctx-menu').classList.remove('open');
+  ctxEmbarqueId = null;
+}
+
+function ctxDuplicar() {
+  if (!ctxEmbarqueId) return;
+  duplicarEmbarque(ctxEmbarqueId);
+  fecharCtxMenu();
+}
+
+function ctxEditar() {
+  if (!ctxEmbarqueId) return;
+  editarEmbarque(ctxEmbarqueId);
+  fecharCtxMenu();
+}
+
+function ctxExcluir() {
+  if (!ctxEmbarqueId) return;
+  excluirEmbarque(ctxEmbarqueId);
+  fecharCtxMenu();
+}
+
 /* ══ CRUD EMBARQUES ══ */
 async function excluirEmbarque(id) {
   if (!confirm('Deseja excluir este embarque?')) return;
@@ -2167,6 +2312,23 @@ async function capturarAgenda() {
 
 /* ══ DOM READY ══ */
 document.addEventListener('DOMContentLoaded', () => {
+
+  /* Fechar context menu ao clicar fora */
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('ctx-menu');
+    if (menu.classList.contains('open') && !menu.contains(e.target)) fecharCtxMenu();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') fecharCtxMenu();
+    if (e.ctrlKey || e.metaKey) ctrlDragAtivo = true;
+  });
+  document.addEventListener('keyup', (e) => {
+    if (!e.ctrlKey && !e.metaKey) ctrlDragAtivo = false;
+  });
+  /* Prevenir menu nativo do browser em cards de embarque */
+  document.addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.embarque')) e.preventDefault();
+  });
 
   /* Condicional cliente */
   document.getElementById('cliente').addEventListener('change', function() {
