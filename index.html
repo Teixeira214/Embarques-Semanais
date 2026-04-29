@@ -1273,6 +1273,7 @@ async function adicionarFeriado() {
     sabadoAtivo = true;
     atualizarEstadoSabado();
     atualizarGridSabado();
+    await salvarSabadoNoStore();
   }
 
   await salvarFeriadosNoStore();
@@ -1510,10 +1511,30 @@ function toast(msg, cor) {
 }
 
 /* ══ SÁBADO ══ */
-function toggleSabado() {
+async function toggleSabado() {
   sabadoAtivo = !sabadoAtivo;
   atualizarEstadoSabado();
   atualizarGridSabado();
+  await salvarSabadoNoStore();
+}
+
+async function salvarSabadoNoStore() {
+  if (!semanaAtual) return;
+  const dados = await Store.get();
+  dados['sabado-' + semanaAtual] = sabadoAtivo;
+  await Store.set(dados);
+}
+
+async function carregarSabadoDoStore() {
+  if (!semanaAtual) return;
+  const dados = await Store.get();
+  const chave = 'sabado-' + semanaAtual;
+  // Só ativa se explicitamente salvo como true (não confunde com feriado de sábado)
+  if (dados[chave] === true) {
+    sabadoAtivo = true;
+    atualizarEstadoSabado();
+    atualizarGridSabado();
+  }
 }
 
 function atualizarEstadoSabado() {
@@ -1742,6 +1763,7 @@ async function carregarSemana(date) {
 
   setLoading(80);
   await renderizarEmbarques();
+  await carregarSabadoDoStore();
   await carregarFeriadosDoStore();
   aplicarFeriadosNaAgenda();
   atualizarSelectsDiaComFeriados();
@@ -1932,8 +1954,8 @@ async function renderizarEmbarques() {
   limparGrid();
   prepararDropZones();
   const dados = await Store.get();
-  const lista = dados[semanaAtual] || [];
-  const auds  = (dados['auditorias-' + semanaAtual]) || [];
+  const lista = (dados[semanaAtual] || []).filter(e => e && e.id);
+  const auds  = (dados['auditorias-' + semanaAtual] || []).filter(a => a && a.id);
   _populaGrid(lista, auds);
   aplicarFeriadosNaAgenda();
 }
@@ -1941,8 +1963,8 @@ async function renderizarEmbarques() {
 function renderizarComDados(todosOsDados) {
   limparGrid();
   prepararDropZones();
-  const lista = (todosOsDados || {})[semanaAtual] || [];
-  const auds  = (todosOsDados || {})['auditorias-' + semanaAtual] || [];
+  const lista = ((todosOsDados || {})[semanaAtual] || []).filter(e => e && e.id);
+  const auds  = ((todosOsDados || {})['auditorias-' + semanaAtual] || []).filter(a => a && a.id);
   _populaGrid(lista, auds);
   aplicarFeriadosNaAgenda();
 }
@@ -1958,9 +1980,11 @@ function atualizarTotaisPorDia(lista) {
 }
 
 function atualizarInsights(lista) {
+  // Garante que só conta itens válidos (com id), evitando fantasmas de exclusões
+  const listaValida = lista.filter(e => e && e.id);
   let totalSacas = 0;
   const vol = {}, qtd = {}, outrosSubs = {}, sacasPorDia = {}, qtdPorDia = {};
-  lista.forEach(e => {
+  listaValida.forEach(e => {
     totalSacas += Number(e.sacas);
     vol[e.cliente] = (vol[e.cliente] || 0) + Number(e.sacas);
     qtd[e.cliente] = (qtd[e.cliente] || 0) + 1;
@@ -1989,7 +2013,7 @@ function atualizarInsights(lista) {
   const sacasHoje     = sacasPorDia[diaHojeChave] || 0;
 
   document.getElementById('insight-total-sacas').textContent       = totalSacas.toLocaleString('pt-BR');
-  document.getElementById('insight-total-embarques').textContent   = lista.length;
+  document.getElementById('insight-total-embarques').textContent   = listaValida.length;
   document.getElementById('insight-cliente-embarques').textContent = mqtd ? nomes[mqtd] : '—';
 
   const mediaEl    = document.getElementById('insight-media-dia');
@@ -2134,7 +2158,9 @@ async function excluirEmbarque(id) {
   const dados = await Store.get();
   for (const s in dados) {
     if (!Array.isArray(dados[s])) continue;
-    dados[s] = dados[s].filter(e => e.id !== id);
+    const antes = dados[s].length;
+    dados[s] = dados[s].filter(e => e && e.id && e.id !== id);
+    if (dados[s].length !== antes) break; // encontrou e removeu, para aqui
   }
   await Store.set(dados);
   await renderizarEmbarques();
