@@ -285,12 +285,78 @@
     .btn-success { background: #1a6b30; color: #fff; font-size: 14px; padding: 11px 20px; }
     .btn-warning { background: #b45309; color: #fff; font-size: 13px; padding: 10px 16px; }
     .btn-audit   { background: var(--auditoria); color: #fff; font-size: 13px; padding: 10px 16px; }
-    input[type="date"].seletor-data {
+    .seletor-data-btn {
+      display: flex; align-items: center; gap: 8px;
       padding: 9px 14px; border-radius: 9px;
       border: 1px solid var(--border); background: var(--surface);
       font-family: 'DM Sans', sans-serif; font-size: 13px;
       color: var(--primary); cursor: pointer;
+      white-space: nowrap; position: relative;
     }
+    .seletor-data-btn:hover { border-color: var(--primary); }
+    .seletor-data-btn i { font-size: 13px; opacity: 0.7; }
+
+    /* Calendário customizado popover */
+    .cal-popover {
+      display: none; position: absolute; z-index: 9999;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; width: 248px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      font-family: 'DM Sans', sans-serif;
+    }
+    .cal-popover.open { display: block; }
+    .cal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .cal-month-label {
+      font-size: 13px; font-weight: 600; color: var(--primary);
+    }
+    .cal-nav { display: flex; gap: 4px; }
+    .cal-nav-btn {
+      width: 26px; height: 26px; border: none;
+      background: transparent; border-radius: 7px;
+      color: var(--primary); cursor: pointer;
+      font-size: 15px; display: flex; align-items: center; justify-content: center;
+      opacity: 0.7;
+    }
+    .cal-nav-btn:hover { background: var(--bg); opacity: 1; }
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 2px; text-align: center;
+    }
+    .cal-dow {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+      color: var(--text-muted); padding: 2px 0 7px; text-transform: uppercase;
+    }
+    .cal-day {
+      height: 30px; width: 30px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px; font-size: 12px; font-weight: 500;
+      color: var(--text); cursor: pointer; user-select: none;
+    }
+    .cal-day:hover:not(.cal-day-muted):not(.cal-day-today) {
+      background: var(--bg);
+    }
+    .cal-day-muted { color: var(--text-muted); opacity: 0.45; cursor: default; }
+    .cal-day-today {
+      background: var(--primary); color: #fff; font-weight: 700;
+    }
+    .cal-day-selected:not(.cal-day-today) {
+      background: color-mix(in srgb, var(--primary) 15%, transparent);
+      color: var(--primary); font-weight: 700;
+    }
+    .cal-footer {
+      display: flex; justify-content: space-between;
+      margin-top: 10px; padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .cal-foot-btn {
+      font-size: 12px; font-weight: 600; color: var(--primary);
+      border: none; background: none; cursor: pointer;
+      padding: 2px 4px; border-radius: 5px; font-family: 'DM Sans', sans-serif;
+    }
+    .cal-foot-btn:hover { background: var(--bg); }
 
     /* ── LEGENDA ── */
     .legenda { display: flex; gap: 10px; padding: 0 40px 18px; flex-wrap: wrap; }
@@ -913,7 +979,34 @@
     <button class="btn btn-primary" onclick="voltarSemanaAtual()">
       <i class="fa-solid fa-house"></i> Semana Atual
     </button>
-    <input type="date" id="seletor-data" class="seletor-data" title="Ir para semana específica">
+    <div style="position:relative;">
+      <button class="seletor-data-btn" id="seletor-data-btn" title="Ir para semana específica" type="button">
+        <i class="fa-solid fa-calendar-days"></i>
+        <span id="seletor-data-label">Selecionar data</span>
+      </button>
+      <div class="cal-popover" id="cal-popover">
+        <div class="cal-header">
+          <span class="cal-month-label" id="cal-month-label"></span>
+          <div class="cal-nav">
+            <button class="cal-nav-btn" id="cal-prev" type="button">&#8249;</button>
+            <button class="cal-nav-btn" id="cal-next" type="button">&#8250;</button>
+          </div>
+        </div>
+        <div class="cal-grid" id="cal-grid">
+          <div class="cal-dow">D</div>
+          <div class="cal-dow">S</div>
+          <div class="cal-dow">T</div>
+          <div class="cal-dow">Q</div>
+          <div class="cal-dow">Q</div>
+          <div class="cal-dow">S</div>
+          <div class="cal-dow">S</div>
+        </div>
+        <div class="cal-footer">
+          <button class="cal-foot-btn" id="cal-limpar" type="button">Limpar</button>
+          <button class="cal-foot-btn" id="cal-hoje" type="button">Hoje</button>
+        </div>
+      </div>
+    </div>
     <span id="semana-passada-badge" class="semana-passada-badge" style="display:none;">
       <i class="fa-solid fa-lock"></i> Semana encerrada – somente leitura
     </span>
@@ -2453,12 +2546,103 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('✅ Auditoria salva');
   });
 
-  /* Seletor de data */
-  document.getElementById('seletor-data').addEventListener('change', function() {
-    if (!this.value) return;
-    dataBaseSemana = new Date(this.value + 'T12:00:00');
-    carregarSemana(dataBaseSemana);
-  });
+  /* Calendário customizado */
+  (function() {
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    let calViewDate = new Date();
+    let calSelected = null;
+
+    const btn      = document.getElementById('seletor-data-btn');
+    const popover  = document.getElementById('cal-popover');
+    const grid     = document.getElementById('cal-grid');
+    const mlabel   = document.getElementById('cal-month-label');
+    const lblSpan  = document.getElementById('seletor-data-label');
+
+    function renderCal() {
+      const y = calViewDate.getFullYear();
+      const m = calViewDate.getMonth();
+      mlabel.textContent = MESES[m] + ' de ' + y;
+
+      const oldDays = grid.querySelectorAll('.cal-day');
+      oldDays.forEach(d => d.remove());
+
+      const firstDay = new Date(y, m, 1).getDay();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const prevDays = new Date(y, m, 0).getDate();
+      const today = new Date();
+
+      for (let i = 0; i < firstDay; i++) {
+        const d = document.createElement('div');
+        d.className = 'cal-day cal-day-muted';
+        d.textContent = prevDays - firstDay + 1 + i;
+        grid.appendChild(d);
+      }
+      for (let d = 1; d <= daysInMonth; d++) {
+        const el = document.createElement('div');
+        el.className = 'cal-day';
+        el.textContent = d;
+        const thisDate = new Date(y, m, d);
+        if (today.getDate()===d && today.getMonth()===m && today.getFullYear()===y)
+          el.classList.add('cal-day-today');
+        if (calSelected && calSelected.getDate()===d && calSelected.getMonth()===m && calSelected.getFullYear()===y)
+          el.classList.add('cal-day-selected');
+        el.addEventListener('click', () => {
+          calSelected = new Date(y, m, d, 12);
+          const mName = MESES[m].substring(0,3).toLowerCase();
+          lblSpan.textContent = d + '/' + String(m+1).padStart(2,'0') + '/' + y;
+          popover.classList.remove('open');
+          dataBaseSemana = calSelected;
+          carregarSemana(calSelected);
+        });
+        grid.appendChild(el);
+      }
+      const remaining = 42 - firstDay - daysInMonth;
+      for (let i = 1; i <= remaining; i++) {
+        const d = document.createElement('div');
+        d.className = 'cal-day cal-day-muted';
+        d.textContent = i;
+        grid.appendChild(d);
+      }
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      calViewDate = calSelected ? new Date(calSelected) : new Date();
+      renderCal();
+      popover.classList.toggle('open');
+    });
+    document.getElementById('cal-prev').addEventListener('click', (e) => {
+      e.stopPropagation();
+      calViewDate.setMonth(calViewDate.getMonth() - 1);
+      renderCal();
+    });
+    document.getElementById('cal-next').addEventListener('click', (e) => {
+      e.stopPropagation();
+      calViewDate.setMonth(calViewDate.getMonth() + 1);
+      renderCal();
+    });
+    document.getElementById('cal-limpar').addEventListener('click', (e) => {
+      e.stopPropagation();
+      calSelected = null;
+      lblSpan.textContent = 'Selecionar data';
+      popover.classList.remove('open');
+    });
+    document.getElementById('cal-hoje').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const hoje = new Date();
+      calSelected = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 12);
+      const d = hoje.getDate(), m = hoje.getMonth(), y = hoje.getFullYear();
+      lblSpan.textContent = d + '/' + String(m+1).padStart(2,'0') + '/' + y;
+      popover.classList.remove('open');
+      dataBaseSemana = calSelected;
+      carregarSemana(calSelected);
+    });
+    document.addEventListener('click', (e) => {
+      if (!popover.contains(e.target) && e.target !== btn) {
+        popover.classList.remove('open');
+      }
+    });
+  })();
 
   /* Firebase events */
   window.addEventListener('firebase-ready', async () => {
