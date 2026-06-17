@@ -962,43 +962,46 @@
     }
     body.modo-tv .tv-ticker-item {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 14px;
-      padding: 0 70px;
+      gap: 8px;
+      padding: 10px 50px;
       border-right: 1px solid rgba(255,255,255,0.09);
       flex-shrink: 0;
       position: relative;
+      max-height: 100%;
+      overflow: hidden;
+      transform: scale(var(--tv-escala, 1));
     }
     body.modo-tv .tv-ticker-item .tv-ticker-icone {
-      width: 64px; height: 64px; border-radius: 16px;
+      width: 42px; height: 42px; border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 26px; flex-shrink: 0;
+      font-size: 18px; flex-shrink: 0;
     }
     body.modo-tv .tv-ticker-item.tv-up .tv-ticker-icone   { background: rgba(74,222,128,0.16); color: #4ade80; }
     body.modo-tv .tv-ticker-item.tv-down .tv-ticker-icone { background: rgba(248,113,113,0.16); color: #f87171; }
     body.modo-tv .tv-ticker-item.tv-flat .tv-ticker-icone { background: rgba(148,163,184,0.16); color: #94a3b8; }
 
     body.modo-tv .tv-ticker-item .tv-ticker-dia-nome {
-      font-size: 19px; font-weight: 800; color: #fff;
-      letter-spacing: 0.6px; text-transform: uppercase;
-      display: flex; align-items: center; gap: 8px;
+      font-size: 15px; font-weight: 800; color: #fff;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 6px;
     }
     body.modo-tv .tv-ticker-item .tv-ticker-valor-linha {
-      display: flex; align-items: baseline; gap: 10px;
+      display: flex; align-items: baseline; gap: 8px;
     }
     body.modo-tv .tv-ticker-item .tv-ticker-valor {
-      font-size: 58px; font-weight: 800; color: #fff;
-      letter-spacing: -1.5px; line-height: 1;
+      font-size: 38px; font-weight: 800; color: #fff;
+      letter-spacing: -1px; line-height: 1;
       font-variant-numeric: tabular-nums;
     }
     body.modo-tv .tv-ticker-item .tv-ticker-unid {
-      font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.4);
+      font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.4);
       text-transform: uppercase;
     }
 
     body.modo-tv .tv-ticker-item .tv-ticker-variacao {
-      font-size: 15px; font-weight: 800;
-      display: flex; align-items: center; gap: 6px;
-      padding: 5px 14px; border-radius: 999px;
+      font-size: 12px; font-weight: 800;
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 11px; border-radius: 999px;
     }
     body.modo-tv .tv-ticker-item.tv-up .tv-ticker-variacao {
       color: #4ade80; background: rgba(74,222,128,0.12);
@@ -1017,14 +1020,14 @@
       color: #ffd166;
     }
     body.modo-tv .tv-ticker-badge-hoje {
-      font-size: 10px; font-weight: 800; color: #0a2745;
+      font-size: 9px; font-weight: 800; color: #0a2745;
       background: #ffd166; border-radius: 6px;
-      padding: 3px 8px; letter-spacing: 0.5px;
+      padding: 2px 7px; letter-spacing: 0.5px;
     }
     body.modo-tv .tv-ticker-barra-wrap {
-      width: 130px; height: 6px; border-radius: 999px;
+      width: 100px; height: 5px; border-radius: 999px;
       background: rgba(255,255,255,0.08); overflow: hidden;
-      margin-top: 4px;
+      margin-top: 2px;
     }
     body.modo-tv .tv-ticker-barra {
       height: 100%; border-radius: 999px;
@@ -2778,10 +2781,30 @@ document.addEventListener('DOMContentLoaded', () => {
       const largura = tickerTrack.scrollWidth / 2;
       const duracaoSegundos = Math.max(18, Math.round(largura / 90));
       tickerTrack.style.animationDuration = duracaoSegundos + 's';
+
+      ajustarEscalaTicker();
+    }
+
+    /* Rede de segurança: se a altura disponível do painel for menor
+       que a altura natural do conteúdo do item (telas mais baixas,
+       zoom do navegador, resoluções não previstas), reduz a escala
+       de todo o ticker proporcionalmente, para nunca cortar dados. */
+    function ajustarEscalaTicker() {
+      const outer = document.querySelector('.tv-ticker-track-outer');
+      const primeiroItem = tickerTrack ? tickerTrack.querySelector('.tv-ticker-item') : null;
+      if (!outer || !primeiroItem || !tickerTrack) return;
+      tickerTrack.style.removeProperty('--tv-escala');
+      const alturaDisponivel = outer.clientHeight;
+      const alturaNecessaria = primeiroItem.scrollHeight;
+      if (alturaNecessaria > alturaDisponivel && alturaDisponivel > 0) {
+        const escala = Math.max(0.55, alturaDisponivel / alturaNecessaria);
+        tickerTrack.style.setProperty('--tv-escala', escala);
+      }
     }
 
     if (tickerWrap) tickerWrap.style.display = 'flex';
     montarTicker();
+    window.addEventListener('resize', () => setTimeout(ajustarEscalaTicker, 150));
 
     // Reagrupa o ticker sempre que os totais por dia forem recalculados
     const rowTotalEl = document.getElementById('row-total');
