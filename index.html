@@ -838,14 +838,18 @@
       background: var(--primary);
       overflow: hidden;
       height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     /* Oculta tudo que não faz parte do escopo da TV */
     body.modo-tv .header,
     body.modo-tv .toolbar,
     body.modo-tv .legenda,
     body.modo-tv .audit-section,
+    body.modo-tv #agenda-header,
     body.modo-tv #row-matutino,
     body.modo-tv #row-vespertino,
+    body.modo-tv #row-total,
     body.modo-tv #page-loader,
     body.modo-tv #loading-bar {
       display: none !important;
@@ -854,6 +858,7 @@
     body.modo-tv .tv-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 28px 50px 6px; color: #fff;
+      flex-shrink: 0;
     }
     body.modo-tv .tv-header h1 {
       font-size: 30px; font-weight: 800; letter-spacing: -0.5px;
@@ -873,6 +878,7 @@
     body.modo-tv .insights {
       grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 22px; padding: 18px 50px 0; max-width: 1900px; margin: 0 auto;
+      flex-shrink: 0; width: 100%;
     }
     body.modo-tv .metric-card {
       padding: 28px 22px 26px; border-radius: 18px;
@@ -885,28 +891,144 @@
     body.modo-tv .metric-value[data-tipo="texto"] { font-size: 20px; }
     body.modo-tv .metric-sub { font-size: 13px; }
 
-    /* Linha de totais por dia, isolada e ampliada como um painel próprio */
-    body.modo-tv .agenda { padding: 30px 50px 40px; }
-    body.modo-tv .grid-wrap { background: transparent; box-shadow: none; }
-    body.modo-tv .agenda-row.total-row {
-      grid-template-columns: 170px repeat(5, 1fr) !important;
-      border-radius: 18px; overflow: hidden;
-      box-shadow: var(--shadow-lg);
+    /* ── PAINEL TICKER (estilo bolsa de valores) ──
+       Ocupa o espaço inferior da tela. Os dias da semana e seus
+       respectivos totais deslizam continuamente da direita para a
+       esquerda, em loop, alimentados pelos mesmos dados de
+       .total-cell já calculados pela aplicação. */
+    body.modo-tv .tv-ticker-wrap {
+      display: flex; flex-direction: column;
+      flex: 1; min-height: 0;
+      margin: 26px 50px 40px;
+      background: linear-gradient(180deg, #0e3760 0%, #0a2745 100%);
+      border-radius: 22px;
+      box-shadow: 0 16px 50px rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      position: relative;
     }
-    body.modo-tv .agenda-row.total-row .periodo {
-      font-size: 16px; font-weight: 800;
+    body.modo-tv .tv-ticker-titlebar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 22px 36px 14px;
+      color: #fff;
+    }
+    body.modo-tv .tv-ticker-titlebar .dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #4ade80; flex-shrink: 0;
+      box-shadow: 0 0 0 0 rgba(74,222,128,0.6);
+      animation: tv-pulse-dot 1.6s infinite;
+    }
+    @keyframes tv-pulse-dot {
+      0%   { box-shadow: 0 0 0 0 rgba(74,222,128,0.55); }
+      70%  { box-shadow: 0 0 0 10px rgba(74,222,128,0); }
+      100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+    }
+    body.modo-tv .tv-ticker-titlebar .titulo {
+      font-size: 18px; font-weight: 800; letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    body.modo-tv .tv-ticker-titlebar .sub {
+      font-size: 13px; opacity: 0.55; font-weight: 500;
+    }
+    body.modo-tv .tv-ticker-track-outer {
+      flex: 1; position: relative; overflow: hidden;
+      display: flex; align-items: stretch;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    /* Sombras nas bordas para sugerir que o conteúdo continua fora da tela */
+    body.modo-tv .tv-ticker-track-outer::before,
+    body.modo-tv .tv-ticker-track-outer::after {
+      content: ''; position: absolute; top: 0; bottom: 0; width: 110px; z-index: 2;
+      pointer-events: none;
+    }
+    body.modo-tv .tv-ticker-track-outer::before {
+      left: 0; background: linear-gradient(90deg, #0a2745 25%, transparent);
+    }
+    body.modo-tv .tv-ticker-track-outer::after {
+      right: 0; background: linear-gradient(270deg, #0a2745 25%, transparent);
+    }
+    body.modo-tv .tv-ticker-track {
+      display: flex; align-items: stretch;
+      will-change: transform;
+      animation: tv-ticker-scroll linear infinite;
+    }
+    @keyframes tv-ticker-scroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    body.modo-tv .tv-ticker-item {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px;
+      padding: 0 70px;
+      border-right: 1px solid rgba(255,255,255,0.09);
+      flex-shrink: 0;
+      position: relative;
+    }
+    body.modo-tv .tv-ticker-item .tv-ticker-icone {
+      width: 64px; height: 64px; border-radius: 16px;
       display: flex; align-items: center; justify-content: center;
+      font-size: 26px; flex-shrink: 0;
     }
-    body.modo-tv .agenda-row.total-row .total-cell {
-      font-size: 38px; font-weight: 800; padding: 26px 10px;
+    body.modo-tv .tv-ticker-item.tv-up .tv-ticker-icone   { background: rgba(74,222,128,0.16); color: #4ade80; }
+    body.modo-tv .tv-ticker-item.tv-down .tv-ticker-icone { background: rgba(248,113,113,0.16); color: #f87171; }
+    body.modo-tv .tv-ticker-item.tv-flat .tv-ticker-icone { background: rgba(148,163,184,0.16); color: #94a3b8; }
+
+    body.modo-tv .tv-ticker-item .tv-ticker-dia-nome {
+      font-size: 19px; font-weight: 800; color: #fff;
+      letter-spacing: 0.6px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 8px;
     }
-    body.modo-tv #agenda-header {
-      grid-template-columns: 170px repeat(5, 1fr) !important;
-      margin-bottom: 10px; background: transparent; box-shadow: none;
+    body.modo-tv .tv-ticker-item .tv-ticker-valor-linha {
+      display: flex; align-items: baseline; gap: 10px;
     }
-    body.modo-tv #agenda-header > div {
-      font-size: 14px; padding: 14px 8px; color: #fff;
+    body.modo-tv .tv-ticker-item .tv-ticker-valor {
+      font-size: 58px; font-weight: 800; color: #fff;
+      letter-spacing: -1.5px; line-height: 1;
+      font-variant-numeric: tabular-nums;
     }
+    body.modo-tv .tv-ticker-item .tv-ticker-unid {
+      font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+    }
+
+    body.modo-tv .tv-ticker-item .tv-ticker-variacao {
+      font-size: 15px; font-weight: 800;
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 999px;
+    }
+    body.modo-tv .tv-ticker-item.tv-up .tv-ticker-variacao {
+      color: #4ade80; background: rgba(74,222,128,0.12);
+    }
+    body.modo-tv .tv-ticker-item.tv-down .tv-ticker-variacao {
+      color: #f87171; background: rgba(248,113,113,0.12);
+    }
+    body.modo-tv .tv-ticker-item.tv-flat .tv-ticker-variacao {
+      color: #94a3b8; background: rgba(148,163,184,0.12);
+    }
+
+    body.modo-tv .tv-ticker-item.tv-hoje {
+      background: linear-gradient(180deg, rgba(255,209,102,0.07), transparent);
+    }
+    body.modo-tv .tv-ticker-item.tv-hoje .tv-ticker-dia-nome {
+      color: #ffd166;
+    }
+    body.modo-tv .tv-ticker-badge-hoje {
+      font-size: 10px; font-weight: 800; color: #0a2745;
+      background: #ffd166; border-radius: 6px;
+      padding: 3px 8px; letter-spacing: 0.5px;
+    }
+    body.modo-tv .tv-ticker-barra-wrap {
+      width: 130px; height: 6px; border-radius: 999px;
+      background: rgba(255,255,255,0.08); overflow: hidden;
+      margin-top: 4px;
+    }
+    body.modo-tv .tv-ticker-barra {
+      height: 100%; border-radius: 999px;
+      background: rgba(255,255,255,0.35);
+    }
+    body.modo-tv .tv-ticker-item.tv-up .tv-ticker-barra   { background: #4ade80; }
+    body.modo-tv .tv-ticker-item.tv-down .tv-ticker-barra { background: #f87171; }
+    body.modo-tv .tv-ticker-item.tv-hoje .tv-ticker-barra { background: #ffd166; }
   </style>
 </head>
 <body>
@@ -1054,6 +1176,21 @@
     </div>
   </div>
 </section>
+
+<!-- ── PAINEL TICKER DO MODO TV (estilo bolsa de valores) ──
+     Oculto fora do modo TV. Conteúdo (.tv-ticker-track) é montado
+     dinamicamente via JS a partir dos totais por dia já calculados
+     pela aplicação (mesmas .total-cell da agenda padrão). -->
+<div class="tv-ticker-wrap" id="tv-ticker-wrap" style="display:none;">
+  <div class="tv-ticker-titlebar">
+    <div class="dot"></div>
+    <div class="titulo">Embarques da Semana</div>
+    <div class="sub">&nbsp;· total de sacas por dia, atualizado em tempo real</div>
+  </div>
+  <div class="tv-ticker-track-outer">
+    <div class="tv-ticker-track" id="tv-ticker-track"></div>
+  </div>
+</div>
 
 <!-- TOOLBAR -->
 <div class="toolbar">
@@ -2559,6 +2696,101 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Evita acúmulo de memória/estado numa aba que fica aberta por dias.
     setTimeout(() => window.location.reload(), 6 * 60 * 60000);
+
+    /* ── Ticker estilo bolsa de valores ──
+       Lê os mesmos dados já calculados pela aplicação (rótulos de dia
+       em #dia-seg..#dia-sex e totais em .total-cell do row-total
+       original, que continua existindo no DOM só fica oculto) e monta
+       uma faixa rolante. Reagrupa automaticamente sempre que os totais
+       mudarem, via MutationObserver. */
+    const tickerWrap  = document.getElementById('tv-ticker-wrap');
+    const tickerTrack = document.getElementById('tv-ticker-track');
+    const diasTicker = [
+      { dia: 'seg', labelId: 'dia-seg' },
+      { dia: 'ter', labelId: 'dia-ter' },
+      { dia: 'qua', labelId: 'dia-qua' },
+      { dia: 'qui', labelId: 'dia-qui' },
+      { dia: 'sex', labelId: 'dia-sex' }
+    ];
+
+    function montarTicker() {
+      if (!tickerTrack) return;
+      const diasChave = ['dom','seg','ter','qua','qui','sex','sab'];
+      const diaHojeChave = diasChave[new Date().getDay()];
+
+      const itens = diasTicker.map(({ dia, labelId }) => {
+        const labelEl = document.getElementById(labelId);
+        const cell    = document.querySelector(`.total-cell[data-dia="${dia}"]`);
+        const label   = labelEl ? labelEl.textContent.trim() : dia.toUpperCase();
+        const valorTxt = cell ? cell.textContent.trim() : '—';
+        const valorNum = valorTxt === '—' ? null : Number(valorTxt.replace(/\./g, '').replace(',', '.'));
+        return { dia, label, valorTxt, valorNum, hoje: dia === diaHojeChave };
+      });
+
+      // Calcula variação em relação ao dia anterior da própria semana
+      const comVariacao = itens.map((item, i) => {
+        let tendencia = 'flat', variacaoTxt = '—';
+        const anterior = i > 0 ? itens[i - 1] : null;
+        if (item.valorNum != null && anterior && anterior.valorNum != null && anterior.valorNum > 0) {
+          const diff = item.valorNum - anterior.valorNum;
+          const pct  = (diff / anterior.valorNum) * 100;
+          tendencia = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+          variacaoTxt = (diff > 0 ? '+' : '') + pct.toFixed(1).replace('.', ',') + '%';
+        }
+        return { ...item, tendencia, variacaoTxt };
+      });
+
+      // Barra de volume relativa ao maior total da semana, reforço visual estilo "pregão"
+      const maiorValor = Math.max(1, ...comVariacao.map(i => i.valorNum || 0));
+      const comBarra = comVariacao.map(item => ({
+        ...item,
+        barraPct: item.valorNum != null ? Math.max(6, Math.round((item.valorNum / maiorValor) * 100)) : 6
+      }));
+
+      const iconeTendencia = { up: 'fa-arrow-trend-up', down: 'fa-arrow-trend-down', flat: 'fa-minus' };
+
+      function renderItem(item) {
+        return `
+          <div class="tv-ticker-item tv-${item.tendencia}${item.hoje ? ' tv-hoje' : ''}">
+            <div class="tv-ticker-icone"><i class="fa-solid fa-truck-fast"></i></div>
+            <div class="tv-ticker-dia-nome">${item.label}${item.hoje ? '<span class="tv-ticker-badge-hoje">HOJE</span>' : ''}</div>
+            <div class="tv-ticker-valor-linha">
+              <div class="tv-ticker-valor">${item.valorTxt}</div>
+              <div class="tv-ticker-unid">sacas</div>
+            </div>
+            <div class="tv-ticker-variacao">
+              <i class="fa-solid ${iconeTendencia[item.tendencia]}"></i> ${item.variacaoTxt}
+            </div>
+            <div class="tv-ticker-barra-wrap"><div class="tv-ticker-barra" style="width:${item.barraPct}%"></div></div>
+          </div>`;
+      }
+
+      // Duplica a sequência para permitir loop contínuo sem salto visível
+      const html = comBarra.map(renderItem).join('') + comBarra.map(renderItem).join('');
+      tickerTrack.innerHTML = html;
+
+      // Velocidade proporcional ao tamanho do conteúdo, para manter
+      // ritmo de leitura constante independentemente da quantidade de itens.
+      const largura = tickerTrack.scrollWidth / 2;
+      const duracaoSegundos = Math.max(18, Math.round(largura / 90));
+      tickerTrack.style.animationDuration = duracaoSegundos + 's';
+    }
+
+    if (tickerWrap) tickerWrap.style.display = 'flex';
+    montarTicker();
+
+    // Reagrupa o ticker sempre que os totais por dia forem recalculados
+    const rowTotalEl = document.getElementById('row-total');
+    if (rowTotalEl && window.MutationObserver) {
+      let debounceTimer = null;
+      const observer = new MutationObserver(() => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(montarTicker, 300);
+      });
+      observer.observe(rowTotalEl, { subtree: true, characterData: true, childList: true });
+    }
+    // Rótulos de dia (datas) também podem mudar ao trocar de semana
+    setInterval(montarTicker, 60000);
   })();
 
   /* Fechar context menu ao clicar fora */
