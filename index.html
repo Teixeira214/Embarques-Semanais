@@ -827,6 +827,86 @@
     .auth-dropdown-empty {
       padding: 11px 16px; font-size: 13px; color: var(--muted); font-style: italic;
     }
+
+    /* ══════════════════════════════════════════════════════════
+       MODO TV — ativado via ?tv=1 na URL (uso exclusivo da portaria)
+       Oculta tudo exceto os 6 cards de insights e a linha de totais
+       por dia, e amplia o que permanece visível para leitura à
+       distância em uma TV.
+       ══════════════════════════════════════════════════════════ */
+    body.modo-tv {
+      background: var(--primary);
+      overflow: hidden;
+      height: 100vh;
+    }
+    /* Oculta tudo que não faz parte do escopo da TV */
+    body.modo-tv .header,
+    body.modo-tv .toolbar,
+    body.modo-tv .legenda,
+    body.modo-tv .audit-section,
+    body.modo-tv #row-matutino,
+    body.modo-tv #row-vespertino,
+    body.modo-tv #page-loader,
+    body.modo-tv #loading-bar {
+      display: none !important;
+    }
+    /* Cabeçalho simplificado exclusivo da TV */
+    body.modo-tv .tv-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 28px 50px 6px; color: #fff;
+    }
+    body.modo-tv .tv-header h1 {
+      font-size: 30px; font-weight: 800; letter-spacing: -0.5px;
+    }
+    body.modo-tv .tv-header .tv-sub {
+      font-size: 14px; opacity: 0.65; letter-spacing: 0.5px; text-transform: uppercase;
+      margin-top: 2px;
+    }
+    body.modo-tv .tv-header .tv-relogio {
+      font-size: 26px; font-weight: 700; letter-spacing: 0.5px;
+    }
+    body.modo-tv .tv-header .tv-relogio .tv-data {
+      font-size: 13px; font-weight: 500; opacity: 0.65; text-align: right;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
+    }
+    /* Cards de insight ampliados para leitura à distância */
+    body.modo-tv .insights {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 22px; padding: 18px 50px 0; max-width: 1900px; margin: 0 auto;
+    }
+    body.modo-tv .metric-card {
+      padding: 28px 22px 26px; border-radius: 18px;
+    }
+    body.modo-tv .metric-icon-wrap {
+      width: 64px; height: 64px; border-radius: 16px; font-size: 26px;
+    }
+    body.modo-tv .metric-label { font-size: 13px; }
+    body.modo-tv .metric-value { font-size: 34px; }
+    body.modo-tv .metric-value[data-tipo="texto"] { font-size: 20px; }
+    body.modo-tv .metric-sub { font-size: 13px; }
+
+    /* Linha de totais por dia, isolada e ampliada como um painel próprio */
+    body.modo-tv .agenda { padding: 30px 50px 40px; }
+    body.modo-tv .grid-wrap { background: transparent; box-shadow: none; }
+    body.modo-tv .agenda-row.total-row {
+      grid-template-columns: 170px repeat(5, 1fr) !important;
+      border-radius: 18px; overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+    body.modo-tv .agenda-row.total-row .periodo {
+      font-size: 16px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    body.modo-tv .agenda-row.total-row .total-cell {
+      font-size: 38px; font-weight: 800; padding: 26px 10px;
+    }
+    body.modo-tv #agenda-header {
+      grid-template-columns: 170px repeat(5, 1fr) !important;
+      margin-bottom: 10px; background: transparent; box-shadow: none;
+    }
+    body.modo-tv #agenda-header > div {
+      font-size: 14px; padding: 14px 8px; color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -864,6 +944,18 @@
   </div>
 
 
+
+<!-- ── CABEÇALHO EXCLUSIVO DO MODO TV (oculto fora do modo TV) ── -->
+<div class="tv-header" id="tv-header" style="display:none;">
+  <div>
+    <h1>Embarques Semanais</h1>
+    <div class="tv-sub">Super Safra · Controle de Logística</div>
+  </div>
+  <div class="tv-relogio">
+    <div id="tv-relogio-hora">--:--</div>
+    <div class="tv-data" id="tv-relogio-data">—</div>
+  </div>
+</div>
 
 <!-- LOADER OVERLAY -->
 <div id="page-loader">
@@ -2431,6 +2523,43 @@ async function capturarAgenda() {
 
 /* ══ DOM READY ══ */
 document.addEventListener('DOMContentLoaded', () => {
+
+  /* ── MODO TV (?tv=1) — uso exclusivo da portaria ──
+     Oculta header, toolbar, legenda, auditoria e os cards individuais
+     de embarque, mantendo visíveis apenas os 6 cards de insight e a
+     linha de totais por dia. Ativado via parâmetro de URL, configurado
+     uma única vez pelo T.I. no navegador da TV. */
+  (function inicializarModoTV() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tv') !== '1') return;
+
+    document.body.classList.add('modo-tv');
+    const tvHeader = document.getElementById('tv-header');
+    if (tvHeader) tvHeader.style.display = 'flex';
+
+    function atualizarRelogioTV() {
+      const agora = new Date();
+      const hora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const data = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+      const elHora = document.getElementById('tv-relogio-hora');
+      const elData = document.getElementById('tv-relogio-data');
+      if (elHora) elHora.textContent = hora;
+      if (elData) elData.textContent = data;
+    }
+    atualizarRelogioTV();
+    setInterval(atualizarRelogioTV, 30000);
+
+    // Garante que a TV sempre mostre a semana atual, mesmo que algo
+    // mude a navegação de semana em segundo plano (defesa extra, já
+    // que a toolbar de navegação fica oculta e não há como o usuário
+    // da TV mudar de semana manualmente).
+    setInterval(() => {
+      if (typeof voltarSemanaAtual === 'function') voltarSemanaAtual();
+    }, 5 * 60000);
+
+    // Evita acúmulo de memória/estado numa aba que fica aberta por dias.
+    setTimeout(() => window.location.reload(), 6 * 60 * 60000);
+  })();
 
   /* Fechar context menu ao clicar fora */
   document.addEventListener('click', (e) => {
