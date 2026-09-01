@@ -1576,40 +1576,48 @@ function getChaveDiaDaData(dataStr) {
   return diasJs[dow] || null;
 }
 
-function dataEstaNestasSemana(dataStr) {
-  // Verifica se a data pertence à semana atualmente exibida
-  if (!dataStr) return false;
-  const d      = new Date(dataStr + 'T12:00:00');
-  const monday = getMonday(dataBaseSemana);
-  const friday = new Date(monday); friday.setDate(monday.getDate() + 5); // sábado
-  return d >= monday && d <= friday;
-}
-
 async function adicionarFeriado() {
   const dataVal = document.getElementById('feriado-data').value;
   const nomeVal = document.getElementById('feriado-nome').value.trim();
   if (!dataVal)  return alert('Selecione a data do feriado.');
   if (!nomeVal)  return alert('Digite o nome do feriado.');
-  if (!dataEstaNestasSemana(dataVal)) return alert('A data deve estar dentro da semana exibida (Seg-Sáb).');
 
   const dia = getChaveDiaDaData(dataVal);
   if (!dia) return alert('Domingo não é um dia útil. Selecione de Segunda a Sábado.');
 
-  feriadosSemana[dia] = { data: dataVal, nome: nomeVal };
+  const dataObj         = new Date(dataVal + 'T12:00:00');
+  const semanaDoFeriado = getISOWeekKey(dataObj);
 
-  // Se marcou sábado como feriado e sábado não está ativo, ativa para mostrar na grade
-  if (dia === 'sab' && !sabadoAtivo) {
-    sabadoAtivo = true;
-    atualizarEstadoSabado();
-    atualizarGridSabado();
-    await salvarSabadoNoStore();
+  if (semanaDoFeriado === semanaAtual) {
+    // Feriado pertence à semana que já está sendo exibida: atualiza em memória e na grade
+    feriadosSemana[dia] = { data: dataVal, nome: nomeVal };
+
+    // Se marcou sábado como feriado e sábado não está ativo, ativa para mostrar na grade
+    if (dia === 'sab' && !sabadoAtivo) {
+      sabadoAtivo = true;
+      atualizarEstadoSabado();
+      atualizarGridSabado();
+      await salvarSabadoNoStore();
+    }
+
+    await salvarFeriadosNoStore();
+    renderizarListaFeriados();
+  } else {
+    // Feriado de outra semana (ex: cadastrar a Independência com antecedência):
+    // grava direto na chave da semana correspondente, sem alterar a grade atual
+    const dados   = await Store.get();
+    const chave   = 'feriados-' + semanaDoFeriado;
+    const feriadosDaOutraSemana = dados[chave] || {};
+    feriadosDaOutraSemana[dia] = { data: dataVal, nome: nomeVal };
+    dados[chave] = feriadosDaOutraSemana;
+    await Store.set(dados);
+
+    const segundaDaOutraSemana = getMonday(dataObj);
+    alert(`Feriado "${nomeVal}" cadastrado para a semana de ${formatDate(segundaDaOutraSemana)}. Navegue até essa semana para visualizá-lo na agenda.`);
   }
-
-  await salvarFeriadosNoStore();
 
   document.getElementById('feriado-data').value = '';
   document.getElementById('feriado-nome').value = '';
-  renderizarListaFeriados();
 }
 
 async function removerFeriado(dia) {
